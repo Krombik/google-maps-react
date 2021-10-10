@@ -1,4 +1,4 @@
-import React, { memo, VFC } from 'react';
+import React, { memo, useCallback, useState, VFC } from 'react';
 import {
   GoogleMapLoader,
   useGoogleMapStatus,
@@ -7,23 +7,30 @@ import {
 
 const options = { apiKey: '' };
 
-const Kek = createGoogleMapComponent(
-  ['onBoundsChanged', 'onCenterChanged'],
-  []
+const GoogleMap = createGoogleMapComponent(
+  ['onBoundsChanged', 'onCenterChanged', 'onZoomChanged'],
+  ['zoom']
 );
 
 const style = { height: '100vh', width: '100vw' };
 
-const Bek = () => {
+const CGoogleMap = () => {
   const status = useGoogleMapStatus();
+  const [zoom, setZoom] = useState(0);
+  const k = useCallback(function (this: any) {
+    console.log(this.getZoom());
+    setZoom(this.getZoom()!);
+  }, []);
   if (status === 1)
     return (
-      <Kek
+      <GoogleMap
         style={style}
-        defaultOptions={{ center: { lat: 0, lng: 0 }, zoom: 0 }}
+        defaultOptions={{ center: { lat: 0, lng: 0 } }}
         onBoundsChanged={function () {
           console.log(this);
         }}
+        onZoomChanged={k}
+        zoom={zoom}
       />
     );
 
@@ -38,7 +45,7 @@ const Lll = () => {
 const Home: VFC = memo(() => {
   return (
     <GoogleMapLoader options={options}>
-      <Bek />
+      <CGoogleMap />
       <Lll />
     </GoogleMapLoader>
   );
