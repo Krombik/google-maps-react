@@ -13,7 +13,7 @@ type Callbacks = [
 ];
 
 const _ = Object.freeze({
-  getOverlayViewClass: () =>
+  _getOverlayViewClass: () =>
     class extends google.maps.OverlayView {
       private readonly _div: HTMLElement;
 
@@ -78,12 +78,13 @@ const _ = Object.freeze({
       }
     },
 
-  get OverlayView(): ReturnType<typeof this.getOverlayViewClass> {
+  get OverlayView(): ReturnType<typeof this._getOverlayViewClass> {
     Object.defineProperty(this, 'OverlayView', {
-      value: this.getOverlayViewClass(),
+      value: this._getOverlayViewClass(),
     });
 
-    // delete this.getOverlayViewClass;
+    //@ts-ignore
+    delete this._getOverlayViewClass;
 
     return this.OverlayView;
   },

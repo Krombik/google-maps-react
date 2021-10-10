@@ -1,38 +1,38 @@
 import { forwardRef, ReactElement, Ref } from 'react';
-import { ActionName } from '../types';
-import createUseStateAndActions, {
-  UseStateAndActions,
-} from './createUseStateAndActions';
+import { HandlerName } from '../types';
+import createUseStateAndHandlers, {
+  UseStateAndHandlers,
+} from './createUseStateAndHandlers';
 
 type Render<P, T> = (props: P, ref: Ref<T>) => ReactElement | null;
 
 const wrapper =
   <
     Props extends Record<string, unknown>,
-    Actions extends Partial<Record<ActionName, (...args: any[]) => void>>,
+    Handlers extends Partial<Record<HandlerName, (...args: any[]) => void>>,
     State extends Record<string, unknown>,
     Instance = unknown
   >(
     createRender: <
-      A extends keyof Actions & ActionName,
+      A extends keyof Handlers & HandlerName,
       S extends keyof State & string
     >(
-      useStateAndActions: UseStateAndActions
-    ) => Render<Props & Pick<Actions, A> & Pick<State, S>, Instance>,
-    connectedPairs: Partial<
-      Record<keyof Actions & ActionName, keyof State & string>
+      useStateAndHandlers: UseStateAndHandlers
+    ) => Render<Props & Pick<Handlers, A> & Pick<State, S>, Instance>,
+    connectedHandlersAndState: Partial<
+      Record<keyof Handlers & HandlerName, keyof State & string>
     > = {}
   ) =>
-  <A extends keyof Actions & ActionName, S extends keyof State & string>(
-    actionNamesList: readonly A[],
+  <A extends keyof Handlers & HandlerName, S extends keyof State & string>(
+    handlerNamesList: readonly A[],
     stateNamesList: readonly S[]
   ) =>
     forwardRef(
       createRender<A, S>(
-        createUseStateAndActions<A, S>(
-          actionNamesList,
+        createUseStateAndHandlers<A, S>(
+          handlerNamesList,
           stateNamesList,
-          connectedPairs as Partial<Record<A, S>>
+          connectedHandlersAndState as Partial<Record<A, S>>
         )
       )
     );
