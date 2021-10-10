@@ -5,14 +5,15 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { GenericActions } from '../types';
+import { GenerateHandlers } from '../types';
 import setRef from '../utils/setRef';
 import { MapContext } from '../hooks/useGoogleMap';
 import wrapper from '../utils/wrapper';
 
-type Actions = GenericActions<
+type Handlers = GenerateHandlers<
   google.maps.Map,
   {
+    //kekW
     onBoundsChanged: [];
     onCenterChanged: [];
     onClick: [e: google.maps.MapMouseEvent | google.maps.IconMouseEvent];
@@ -57,11 +58,11 @@ type Props = PropsWithChildren<{
 
 const createGoogleMapComponent = wrapper<
   Props,
-  Actions,
+  Handlers,
   State,
   google.maps.Map
 >(
-  (useStateAndActions) =>
+  (useStateAndHandlers) =>
     ({ children, className, style, defaultOptions, ...props }, ref) => {
       const mapElRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +91,7 @@ const createGoogleMapComponent = wrapper<
         };
       }, []);
 
-      useStateAndActions?.(mapRef, props);
+      useStateAndHandlers(mapRef, props);
 
       return (
         <div ref={mapElRef} className={className} style={style}>

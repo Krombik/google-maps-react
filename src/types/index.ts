@@ -1,10 +1,10 @@
 import { eventMap } from '../utils/constants';
 
-export type ActionName = keyof typeof eventMap;
+export type HandlerName = keyof typeof eventMap;
 
-export type GenericActions<
+export type GenerateHandlers<
   This,
-  T extends Partial<Record<ActionName, any[]>>
+  T extends Partial<Record<HandlerName, any[]>>
 > = {
   [key in keyof T]?: T[key] extends any[]
     ? { (this: This, ...args: T[key]): void }
