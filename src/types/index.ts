@@ -1,6 +1,6 @@
-import { eventMap } from '../utils/constants';
+import { handlersMap } from '../utils/constants';
 
-export type HandlerName = keyof typeof eventMap;
+export type HandlerName = keyof typeof handlersMap;
 
 export type GenerateHandlers<
   This,

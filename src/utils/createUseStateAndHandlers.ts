@@ -1,6 +1,6 @@
 import { MutableRefObject, useEffect, useRef } from 'react';
 import { HandlerName } from '../types';
-import { eventMap } from './constants';
+import { handlersMap } from './constants';
 
 export type UseStateAndHandlers<
   A extends HandlerName = HandlerName,
@@ -68,8 +68,10 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
             useEffect(
               () =>
                 handler &&
-                instanceRef.current?.addListener(eventMap[handlerName], handler)
-                  .remove,
+                instanceRef.current?.addListener(
+                  handlersMap[handlerName],
+                  handler
+                ).remove,
               [handler]
             );
           }
@@ -143,7 +145,7 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
       useEffect(
         () =>
           handler &&
-          instanceRef.current?.addListener(eventMap[handlerName], handler)
+          instanceRef.current?.addListener(handlersMap[handlerName], handler)
             .remove,
         [handler]
       );
@@ -162,7 +164,7 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
         const { isTriggeredBySetStateObj } = dataRef.current;
 
         return instanceRef.current?.addListener(
-          eventMap[handlerName],
+          handlersMap[handlerName],
           function (this: ThisParameterType<typeof handler>) {
             if (!isTriggeredBySetStateObj[dependBy]) {
               handler.apply(this, arguments);

@@ -13,7 +13,6 @@ import wrapper from '../utils/wrapper';
 type Handlers = GenerateHandlers<
   google.maps.Map,
   {
-    //kekW
     onBoundsChanged: [];
     onCenterChanged: [];
     onClick: [e: google.maps.MapMouseEvent | google.maps.IconMouseEvent];
