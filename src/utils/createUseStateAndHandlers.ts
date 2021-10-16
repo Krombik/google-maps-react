@@ -1,6 +1,7 @@
 import { MutableRefObject, useEffect, useRef } from 'react';
 import { HandlerName } from '../types';
 import { handlersMap } from './constants';
+import isNotEqual from './isNotEqual';
 
 export type UseStateAndHandlers<
   A extends HandlerName = HandlerName,
@@ -26,68 +27,76 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
 
   const stateNamesListLength = stateNamesList.length;
 
-  const handlerNamesListLength = handlerNamesList.length;
+  type _P = Parameters<UseStateAndHandlers<A, S>>;
 
-  type _UseStateAndHandlers = UseStateAndHandlers<A, S>;
+  const stateEffect = (
+    prevStateArr: unknown[],
+    instance: NonNullable<_P[0]['current']>,
+    props: _P[1]
+  ) => {
+    if (prevStateArr.length) {
+      for (let i = stateNamesListLength; i--; ) {
+        const stateName = stateNamesList[i];
 
-  type _P = { value: _UseStateAndHandlers };
+        const state: unknown = props[stateName];
 
-  const _ = {
-    get useState(): _UseStateAndHandlers {
-      Object.defineProperty(this, 'useState', {
-        value: (instanceRef, props) => {
-          const isNotFirstRenderRef = useRef<boolean>();
+        if (isNotEqual(state, prevStateArr[i])) {
+          instance.set(stateName, state);
 
-          for (let i = stateNamesListLength; i--; ) {
-            const stateName = stateNamesList[i];
-
-            const state: unknown = props[stateName];
-
-            useEffect(() => {
-              if (isNotFirstRenderRef.current) {
-                instanceRef.current?.set(stateName, state);
-              } else if (!i) {
-                isNotFirstRenderRef.current = true;
-              }
-            }, [state]);
-          }
-        },
-      } as _P);
-
-      return this.useState;
-    },
-
-    get useHandlers(): _UseStateAndHandlers {
-      Object.defineProperty(this, 'useHandlers', {
-        value: (instanceRef, props) => {
-          for (let i = handlerNamesListLength; i--; ) {
-            const handlerName = handlerNamesList[i];
-
-            const handler = props[handlerName];
-
-            useEffect(
-              () =>
-                handler &&
-                instanceRef.current?.addListener(
-                  handlersMap[handlerName],
-                  handler
-                ).remove,
-              [handler]
-            );
-          }
-        },
-      } as _P);
-
-      return this.useHandlers;
-    },
+          prevStateArr[i] = state;
+        }
+      }
+    } else {
+      for (let i = stateNamesListLength; i--; ) {
+        prevStateArr[i] = props[stateNamesList[i]];
+      }
+    }
   };
 
-  if (handlerNamesListLength === 0) {
-    return _.useState;
+  let handlersEffect = (
+    listeners: google.maps.MapsEventListener[],
+    handlerNamesList: readonly A[],
+    instance: NonNullable<_P[0]['current']>,
+    props: _P[1]
+  ) => {
+    for (let i = handlerNamesList.length; i--; ) {
+      const handlerName = handlerNamesList[i];
+
+      const handler = props[handlerName];
+
+      if (handler) {
+        listeners.push(instance.addListener(handlersMap[handlerName], handler));
+      }
+    }
+  };
+
+  if (handlerNamesList.length === 0) {
+    return (instanceRef, props) => {
+      const prevStateArrRef = useRef<unknown[]>([]);
+
+      useEffect(() => {
+        const instance = instanceRef.current;
+
+        if (instance) stateEffect(prevStateArrRef.current, instance, props);
+      });
+    };
   }
 
   if (stateNamesListLength === 0) {
-    return _.useHandlers;
+    return (instanceRef, props) => {
+      useEffect(() => {
+        const instance = instanceRef.current;
+        const listeners: google.maps.MapsEventListener[] = [];
+
+        if (instance) {
+          handlersEffect(listeners, handlerNamesList, instance, props);
+        }
+
+        return () => {
+          for (let i = listeners.length; i--; ) listeners[i].remove();
+        };
+      });
+    };
   }
 
   const connectedPairs = handlerNamesList.reduce<Partial<Record<A, S>>>(
@@ -106,104 +115,98 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
   const connectedHandlersLength = connectedHandlers.length;
 
   if (connectedHandlersLength === 0) {
-    const { useHandlers, useState } = _;
-
     return (instanceRef, props) => {
-      useHandlers(instanceRef, props);
+      const prevStateArrRef = useRef<unknown[]>([]);
 
-      useState(instanceRef, props);
+      useEffect(() => {
+        const instance = instanceRef.current;
+        const listeners: google.maps.MapsEventListener[] = [];
+
+        if (instance) {
+          handlersEffect(listeners, handlerNamesList, instance, props);
+
+          stateEffect(prevStateArrRef.current, instance, props);
+        }
+
+        return () => {
+          for (let i = listeners.length; i--; ) listeners[i].remove();
+        };
+      });
     };
   }
 
-  const connectedState: S[] = Object.values(connectedPairs);
-
-  const connectedStateLength = connectedState.length;
-
-  const unconnectedHandlers = handlerNamesList.filter(
+  handlerNamesList = handlerNamesList.filter(
     (item) => !connectedHandlers.includes(item)
   );
 
-  const unconnectedHandlersLength = unconnectedHandlers.length;
-
-  const unconnectedState = stateNamesList.filter(
-    (item) => !connectedState.includes(item)
-  );
-
-  const unconnectedStateLength = unconnectedState.length;
+  if (!handlerNamesList.length) handlersEffect = () => void 0;
 
   return (instanceRef, props) => {
     const dataRef = useRef<{
       isTriggeredBySetStateObj: Record<string, boolean>;
-      isNotFirstRender?: boolean;
-    }>({ isTriggeredBySetStateObj: {} });
+      prevStateArr: unknown[];
+    }>({
+      isTriggeredBySetStateObj: {},
+      prevStateArr: [],
+    });
 
-    for (let i = unconnectedHandlersLength; i--; ) {
-      const handlerName = unconnectedHandlers[i];
+    useEffect(() => {
+      const instance = instanceRef.current;
+      const listeners: google.maps.MapsEventListener[] = [];
 
-      const handler = props[handlerName];
+      if (instance) {
+        handlersEffect(listeners, handlerNamesList, instance, props);
 
-      useEffect(
-        () =>
-          handler &&
-          instanceRef.current?.addListener(handlersMap[handlerName], handler)
-            .remove,
-        [handler]
-      );
-    }
+        const { isTriggeredBySetStateObj, prevStateArr } = dataRef.current;
 
-    for (let i = connectedHandlersLength; i--; ) {
-      const handlerName = connectedHandlers[i];
+        for (let i = connectedHandlersLength; i--; ) {
+          const handlerName = connectedHandlers[i];
 
-      const handler = props[handlerName];
+          const handler = props[handlerName];
 
-      useEffect(() => {
-        if (!handler) return;
+          const dependBy = connectedPairs[handlerName]!;
 
-        const dependBy = connectedPairs[handlerName]!;
+          if (handler) {
+            listeners.push(
+              instance.addListener(
+                handlersMap[handlerName],
+                function (this: ThisParameterType<typeof handler>) {
+                  if (!isTriggeredBySetStateObj[dependBy]) {
+                    handler.apply(this, arguments);
+                  } else {
+                    isTriggeredBySetStateObj[dependBy] = false;
+                  }
+                }
+              )
+            );
+          }
+        }
 
-        const { isTriggeredBySetStateObj } = dataRef.current;
+        if (prevStateArr.length) {
+          for (let i = stateNamesListLength; i--; ) {
+            const stateName = stateNamesList[i];
 
-        return instanceRef.current?.addListener(
-          handlersMap[handlerName],
-          function (this: ThisParameterType<typeof handler>) {
-            if (!isTriggeredBySetStateObj[dependBy]) {
-              handler.apply(this, arguments);
-            } else {
-              isTriggeredBySetStateObj[dependBy] = false;
+            const state: unknown = props[stateName];
+
+            if (isNotEqual(state, prevStateArr[i])) {
+              isTriggeredBySetStateObj[stateName] = true;
+
+              instance.set(stateName, state);
+
+              prevStateArr[i] = state;
             }
           }
-        ).remove;
-      }, [handler]);
-    }
-
-    for (let i = unconnectedStateLength; i--; ) {
-      const stateName = unconnectedState[i];
-
-      const state: unknown = props[stateName];
-
-      useEffect(() => {
-        if (dataRef.current.isNotFirstRender)
-          instanceRef.current?.set(stateName, state);
-      }, [state]);
-    }
-
-    for (let i = connectedStateLength; i--; ) {
-      const stateName = connectedState[i];
-
-      const state: unknown = props[stateName];
-
-      useEffect(() => {
-        const data = dataRef.current;
-
-        if (data.isNotFirstRender) {
-          data.isTriggeredBySetStateObj[stateName] = true;
-
-          instanceRef.current?.set(stateName, state);
-        } else if (!i) {
-          data.isNotFirstRender = true;
+        } else {
+          for (let i = stateNamesListLength; i--; ) {
+            prevStateArr[i] = props[stateNamesList[i]];
+          }
         }
-      }, [state]);
-    }
+      }
+
+      return () => {
+        for (let i = listeners.length; i--; ) listeners[i].remove();
+      };
+    });
   };
 };
 
