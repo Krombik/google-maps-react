@@ -27,9 +27,8 @@ const CGoogleMap = () => {
         onBoundsChanged={function () {
           console.log(this);
         }}
-        onZoomChanged={function () {
-          console.log(this.getZoom());
-          setZoom(this.getZoom()!);
+        onZoomChanged={(zoom) => {
+          setZoom(zoom);
         }}
         center={{ lat: 0, lng: 0 }}
         zoom={zoom}

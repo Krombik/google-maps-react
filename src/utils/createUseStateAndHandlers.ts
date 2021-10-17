@@ -9,15 +9,15 @@ export type UseStateAndHandlers<
   S extends string = string
 > = (
   instanceRef: MutableRefObject<
-    Pick<google.maps.Map, 'addListener' | 'set'> | undefined
+    Pick<google.maps.Map, 'addListener' | 'set' | 'get'> | undefined
   >,
   props: Partial<Record<A, (...args: any) => void>> & Record<S, unknown>
 ) => void;
 
 const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
-  handlerNamesList: readonly A[],
-  stateNamesList: readonly S[],
-  connectedHandlersAndState: Partial<Record<A, S>>
+  handlerNamesList: A[],
+  stateNamesList: S[],
+  connectedPairs: Partial<Record<A, S>>
 ): UseStateAndHandlers<A, S> => {
   if (stateNamesList.length === 0 && handlerNamesList.length === 0) return noop;
 
@@ -70,10 +70,16 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
       useEffect(() => {
         const instance = instanceRef.current;
 
+        const dependBy = connectedPairs[handlerName];
+
         if (instance && handler) {
           const listener = instance.addListener(
             handlersMap[handlerName],
-            handler
+            dependBy
+              ? function (this: typeof instance) {
+                  handler.call(this, this.get(dependBy));
+                }
+              : handler
           );
 
           return () => listener.remove();
@@ -88,18 +94,19 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
     return useHandlersEffect;
   }
 
-  const connectedPairs = handlerNamesList.reduce<Partial<Record<A, S>>>(
-    (acc, handlerName) => {
-      const stateName: S | undefined = connectedHandlersAndState[handlerName];
+  const connectedHandlers: A[] = [];
 
-      return stateName && stateNamesList.includes(stateName)
-        ? { ...acc, [handlerName]: stateName }
-        : acc;
-    },
-    {}
-  );
+  for (let i = handlerNamesList.length; i--; ) {
+    const handlerName = handlerNamesList[i];
 
-  const connectedHandlers = Object.keys(connectedPairs) as A[];
+    const stateName: S | undefined = connectedPairs[handlerName];
+
+    if (stateName && stateNamesList.includes(stateName)) {
+      connectedHandlers.push(handlerName);
+
+      handlerNamesList.splice(i, 1);
+    }
+  }
 
   const connectedHandlersLength = connectedHandlers.length;
 
@@ -110,10 +117,6 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
       useStateEffect(instanceRef, props);
     };
   }
-
-  handlerNamesList = handlerNamesList.filter(
-    (item) => !connectedHandlers.includes(item)
-  );
 
   if (!handlerNamesList.length) useHandlersEffect = noop;
 
@@ -143,9 +146,9 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
 
           const listener = instance.addListener(
             handlersMap[handlerName],
-            function (this: ThisParameterType<typeof handler>) {
+            function (this: typeof instance) {
               if (!isTriggeredBySetStateObj[dependBy]) {
-                handler.apply(this, arguments);
+                handler.call(this, this.get(dependBy));
               } else {
                 isTriggeredBySetStateObj[dependBy] = false;
               }
