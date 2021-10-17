@@ -3,6 +3,7 @@ import {
   GoogleMapLoader,
   useGoogleMapStatus,
   createGoogleMapComponent,
+  createMarkerComponent,
 } from 'google-maps-react';
 
 const options = { apiKey: '' };
@@ -11,6 +12,8 @@ const GoogleMap = createGoogleMapComponent(
   ['onBoundsChanged', 'onCenterChanged', 'onZoomChanged'],
   ['center', 'zoom']
 );
+
+const Marker = createMarkerComponent([], ['position']);
 
 const style = { height: '100vh', width: '100vw' };
 
@@ -32,7 +35,9 @@ const CGoogleMap = () => {
         }}
         center={{ lat: 0, lng: 0 }}
         zoom={zoom}
-      />
+      >
+        <Marker position={c} />
+      </GoogleMap>
     );
 
   return null;
