@@ -70,9 +70,9 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
       useEffect(() => {
         const instance = instanceRef.current;
 
-        const dependBy = connectedPairs[handlerName];
-
         if (instance && handler) {
+          const dependBy = connectedPairs[handlerName];
+
           const listener = instance.addListener(
             handlersMap[handlerName],
             dependBy
@@ -118,7 +118,7 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
     };
   }
 
-  if (!handlerNamesList.length) useHandlersEffect = noop;
+  if (handlerNamesList.length === 0) useHandlersEffect = noop;
 
   return (instanceRef, props) => {
     const dataRef = useRef<{

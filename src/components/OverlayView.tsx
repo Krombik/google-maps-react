@@ -1,8 +1,8 @@
-import { useRef, useEffect, forwardRef } from 'react';
+import { useRef, useEffect, FC } from 'react';
 import { createPortal } from 'react-dom';
 import useConst from '../hooks/useConst';
 import useGoogleMap from '../hooks/useGoogleMap';
-import setRef from '../utils/setRef';
+import noop from '../utils/noop';
 
 type CoordsDeps = [lat: number, lng: number];
 
@@ -21,9 +21,9 @@ const _ = Object.freeze({
 
       private _latLng: google.maps.LatLng;
 
-      private _onAdd?: () => void;
-      private _onDraw?: (x: number, y: number) => void;
-      private _onRemove?: () => void;
+      private _onAdd: () => void;
+      private _onDraw: (x: number, y: number) => void;
+      private _onRemove: () => void;
 
       constructor(
         div: HTMLElement,
@@ -41,9 +41,9 @@ const _ = Object.freeze({
       }
 
       setCallbacks(callbacks: Callbacks) {
-        this._onAdd = callbacks[0];
-        this._onDraw = callbacks[1];
-        this._onRemove = callbacks[2];
+        this._onAdd = callbacks[0] || noop;
+        this._onDraw = callbacks[1] || noop;
+        this._onRemove = callbacks[2] || noop;
       }
 
       setCoords(coords: CoordsDeps) {
@@ -55,7 +55,7 @@ const _ = Object.freeze({
 
         this.getPanes()![this._mapPaneLayer].appendChild(this._div);
 
-        this._onAdd?.();
+        this._onAdd();
       }
 
       draw() {
@@ -67,14 +67,14 @@ const _ = Object.freeze({
           this._div.style.left = `${x}px`;
           this._div.style.top = `${y}px`;
 
-          this._onDraw?.(x, y);
+          this._onDraw(x, y);
         }
       }
 
       onRemove() {
         this._div.parentNode?.removeChild(this._div);
 
-        this._onRemove?.();
+        this._onRemove();
       }
     },
 
@@ -99,70 +99,70 @@ export type OverlayViewProps = {
   onRemove?: () => void;
 } & google.maps.LatLngLiteral;
 
-const OverlayView = forwardRef<HTMLDivElement, OverlayViewProps>(
-  (
-    {
-      lat,
-      lng,
-      children,
-      mapPaneLayer = 'overlayLayer',
-      onAdd,
-      onDraw,
-      onRemove,
-    },
-    ref
-  ) => {
-    const map = useGoogleMap();
+const OverlayView: FC<OverlayViewProps> = ({
+  lat,
+  lng,
+  children,
+  mapPaneLayer,
+  onAdd,
+  onDraw,
+  onRemove,
+}) => {
+  const map = useGoogleMap();
 
-    const div = useConst(() => document.createElement('div'));
+  const div = useConst(() => document.createElement('div'));
 
-    const overlayRef = useRef<_OverlayView>();
+  const dataRef = useRef<{
+    overlay?: _OverlayView;
+    isNotFirstRender?: boolean;
+  }>({});
 
-    const coords: CoordsDeps = [lat, lng];
+  const coords: CoordsDeps = [lat, lng];
 
-    const callbacks: Callbacks = [onAdd, onDraw, onRemove];
+  const callbacks: Callbacks = [onAdd, onDraw, onRemove];
 
-    useEffect(() => {
-      const overlay = new _.OverlayView(div, mapPaneLayer, coords, callbacks);
+  useEffect(() => {
+    const overlay = new _.OverlayView(
+      div,
+      mapPaneLayer || 'overlayLayer',
+      coords,
+      callbacks
+    );
 
-      overlayRef.current = overlay;
+    dataRef.current.overlay = overlay;
 
-      if (ref) setRef(ref, div);
+    overlay.setMap(map);
 
-      overlay.setMap(map);
+    return () => {
+      overlay.setMap(null);
+    };
+  }, []);
 
-      return () => {
-        overlay.setMap(null);
+  useEffect(() => {
+    const { overlay, isNotFirstRender } = dataRef.current;
 
-        if (ref) setRef(ref, null);
-      };
-    }, []);
+    if (isNotFirstRender && overlay) {
+      overlay.setCallbacks(callbacks);
+    }
+  }, callbacks);
 
-    const isNotFirstRenderRef = useRef<boolean>();
+  useEffect(() => {
+    const data = dataRef.current;
 
-    useEffect(() => {
-      const overlay = overlayRef.current;
+    if (data.isNotFirstRender) {
+      const { overlay } = data;
 
-      if (isNotFirstRenderRef.current && overlay) {
-        overlay.setCallbacks(callbacks);
+      if (overlay) {
+        overlay.setCoords(coords);
+
+        overlay.draw();
       }
-    }, callbacks);
+    } else {
+      data.isNotFirstRender = true;
+    }
+  }, coords);
 
-    useEffect(() => {
-      if (isNotFirstRenderRef.current) {
-        const overlay = overlayRef.current;
-
-        if (overlay) {
-          overlay.setCoords(coords);
-          overlay.draw();
-        }
-      } else {
-        isNotFirstRenderRef.current = true;
-      }
-    }, coords);
-
-    return createPortal(children, div);
-  }
-);
+  return createPortal(children, div);
+};
 
 export default OverlayView;
