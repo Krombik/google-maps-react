@@ -6,9 +6,9 @@ import React, {
   useState,
 } from 'react';
 import { GetValue } from '../types';
-import setRef from '../utils/setRef';
 import { MapContext } from '../hooks/useGoogleMap';
 import wrapper from '../utils/wrapper';
+import noop from '../utils/noop';
 
 type Handlers = {
   onBoundsChanged(
@@ -76,7 +76,15 @@ const createGoogleMapComponent = wrapper<
   | 'zoom'
 >(
   (useStateAndHandlers) =>
-    ({ children, className, style, defaultOptions, onInit, ...props }, ref) => {
+    ({
+      children,
+      className,
+      style,
+      defaultOptions,
+      onMount,
+      onUnmount,
+      ...props
+    }) => {
       const mapElRef = useRef<HTMLDivElement>(null);
 
       const mapRef = useRef<google.maps.Map>();
@@ -94,16 +102,12 @@ const createGoogleMapComponent = wrapper<
 
           mapRef.current = map;
 
-          if (ref) setRef(ref, map);
-
-          onInit?.(map);
+          (onMount || noop)(map);
 
           setMap(map);
         }
 
-        return () => {
-          if (ref) setRef(ref, null);
-        };
+        return onUnmount;
       }, []);
 
       useStateAndHandlers(mapRef, props);

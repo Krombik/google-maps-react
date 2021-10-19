@@ -1,41 +1,45 @@
-import { forwardRef, ReactElement, Ref } from 'react';
+import { ReactElement } from 'react';
 import { GetState, HandlerName, SetLiteral, UnSet } from '../types';
 import createUseStateAndHandlers, {
   UseStateAndHandlers,
 } from './createUseStateAndHandlers';
 
-type Render<P, T> = (props: P, ref: Ref<T>) => ReactElement | null;
+type Render<P> = (props: P) => ReactElement | null;
 
 const wrapper =
   <
     Instance extends Record<SetLiteral<string>, (value: any) => void> | {},
     Props extends Record<string, unknown>,
     Handlers extends Partial<Record<HandlerName, (...args: any[]) => void>>,
-    State extends UnSet<keyof Instance>
+    StateKeys extends UnSet<keyof Instance>,
+    WithLifecycle extends boolean = true
   >(
-    createRender: <A extends keyof Handlers & HandlerName, S extends State>(
+    createRender: <H extends keyof Handlers & HandlerName, S extends StateKeys>(
       useStateAndHandlers: UseStateAndHandlers
     ) => Render<
       Props &
-        Partial<Pick<Handlers, A> & { onInit(instance: Instance): void }> &
-        Pick<GetState<Instance, State>, S>,
-      Instance
+        (WithLifecycle extends true
+          ? {
+              onMount?(instance: Instance): void;
+              onUnmount?(): void;
+            }
+          : {}) &
+        Partial<Pick<Handlers, H>> &
+        Pick<GetState<Instance, StateKeys>, S>
     >,
     connectedHandlersAndState: Partial<
-      Record<keyof Handlers & HandlerName, State>
+      Record<keyof Handlers & HandlerName, StateKeys>
     > = {}
   ) =>
-  <A extends keyof Handlers & HandlerName, S extends State>(
-    handlerNamesList: A[],
+  <H extends keyof Handlers & HandlerName, S extends StateKeys>(
+    handlerNamesList: H[],
     stateNamesList: S[]
   ) =>
-    forwardRef(
-      createRender<A, S>(
-        createUseStateAndHandlers<A, S>(
-          handlerNamesList,
-          stateNamesList,
-          connectedHandlersAndState as Partial<Record<A, S>>
-        )
+    createRender<H, S>(
+      createUseStateAndHandlers<H, S>(
+        handlerNamesList,
+        stateNamesList,
+        connectedHandlersAndState as Partial<Record<H, S>>
       )
     );
 

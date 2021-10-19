@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { GetValue } from '../types';
-import setRef from '../utils/setRef';
 import useGoogleMap from '../hooks/useGoogleMap';
 import wrapper from '../utils/wrapper';
+import noop from '../utils/noop';
 
-type Handlers = {
+export type MarkerHandlers = {
   onAnimationChanged(
     this: google.maps.Marker,
     animation: GetValue<google.maps.Marker, 'animation'>
@@ -59,14 +59,11 @@ type Handlers = {
   ): void;
 };
 
-type Props = {
+export type MarkerProps = {
   defaultOptions?: Readonly<google.maps.MarkerOptions>;
 };
 
-const creatMarkerComponent = wrapper<
-  google.maps.Marker,
-  Props,
-  Handlers,
+export type MarkerStateName =
   | 'animation'
   | 'clickable'
   | 'cursor'
@@ -78,10 +75,16 @@ const creatMarkerComponent = wrapper<
   | 'shape'
   | 'title'
   | 'visible'
-  | 'zIndex'
+  | 'zIndex';
+
+const createMarkerComponent = wrapper<
+  google.maps.Marker,
+  MarkerProps,
+  MarkerHandlers,
+  MarkerStateName
 >(
   (useStateAndHandlers) =>
-    ({ defaultOptions, onInit, ...props }, ref) => {
+    ({ defaultOptions, onMount, onUnmount, ...props }) => {
       const map = useGoogleMap();
 
       const markerRef = useRef<google.maps.Marker>();
@@ -95,12 +98,12 @@ const creatMarkerComponent = wrapper<
 
         markerRef.current = marker;
 
-        if (ref) setRef(ref, marker);
-
-        onInit?.(marker);
+        (onMount || noop)(marker);
 
         return () => {
-          if (ref) setRef(ref, null);
+          marker.setMap(null);
+
+          (onUnmount || noop)();
         };
       }, []);
 
@@ -121,4 +124,4 @@ const creatMarkerComponent = wrapper<
   }
 );
 
-export default creatMarkerComponent;
+export default createMarkerComponent;

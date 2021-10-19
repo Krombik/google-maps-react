@@ -23,22 +23,26 @@ const isNotEqual = (first: unknown, second: unknown) => {
 
     const _keys = Object.keys(second!);
 
-    if (keysLength !== _keys.length) return true;
+    if (keysLength != _keys.length) return true;
 
     for (let i = keysLength; i--; ) {
+      let failed = true;
+
       for (let j = _keys.length; j--; ) {
-        if (keys[i] === _keys[j]) {
+        if (keys[i] == _keys[j]) {
           const key = keys[i];
 
           if (isNotEqual(first![key], second![key])) return true;
 
           _keys.splice(j, 1);
 
+          failed = false;
+
           break;
         }
-
-        if (!j) return true;
       }
+
+      if (failed) return true;
     }
 
     return false;
