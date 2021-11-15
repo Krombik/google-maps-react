@@ -126,6 +126,7 @@ const createGoogleMapComponent = wrapper<
     onMapTypeIdChanged: 'mapTypeId',
     onTiltChanged: 'tilt',
     onZoomChanged: 'zoom',
+    onBoundsChanged: 'bounds',
   }
 );
 

@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.12.3",
-    "@googlemaps/markerclusterer": "^1.0.8"
+    "@googlemaps/markerclusterer": "^1.0.8",
+    "kdbush": "^3.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.14.1",
@@ -37,6 +38,7 @@
     "@testing-library/user-event": "^13.2.1",
     "@types/google.maps": "^3.45.6",
     "@types/jest": "^25.1.4",
+    "@types/kdbush": "^3.0.0",
     "@types/node": "^12.12.38",
     "@types/react": "^17.0.21",
     "@types/react-dom": "^17.0.9",
