@@ -6,6 +6,7 @@ import {
   createMarkerComponent,
   createClusterMarkerComponent,
   MarkerClusterer,
+  Supercluster,
 } from 'google-maps-react';
 
 const options = { apiKey: '' };
@@ -54,13 +55,30 @@ const CGoogleMap = () => {
   const [zoom, setZoom] = useState(0);
   const [markerPos, setMarkerPos] = useState({ lat: 0, lng: 0 });
   const [asd, setasd] = useState(locations);
+  useEffect(() => {
+    const kek = new Supercluster<{ lat: number; lng: number }>((v) => v);
+    kek.load(locations);
+    console.log(123);
+    console.log(
+      kek.getClusters(
+        [
+          52.92047431441989, -52.695036788568686, -142.10882256058008,
+          10.662755354350752,
+        ],
+        zoom
+      )
+    );
+  }, []);
   if (status === 1)
     return (
       <GoogleMap
         style={style}
         defaultOptions={{ zoom: 5 }}
-        onBoundsChanged={function () {
-          console.log(this);
+        onBoundsChanged={function (b) {
+          console.log(b);
+          const sw = b.getSouthWest();
+          const ne = b.getNorthEast();
+          console.log(sw.lng(), sw.lat(), ne.lng(), ne.lat());
         }}
         onZoomChanged={(zoom) => {
           setZoom(zoom);
