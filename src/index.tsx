@@ -4,6 +4,8 @@ export { default as createMarkerComponent } from './createComponents/createMarke
 
 export { default as createClusterMarkerComponent } from './createComponents/createClusterMarker';
 
+export { default as Supercluster } from './utils/kekw';
+
 export {
   default as GoogleMapLoader,
   useGoogleMapStatus,

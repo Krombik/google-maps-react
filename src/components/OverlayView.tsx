@@ -64,8 +64,8 @@ const _ = Object.freeze({
         if (pos) {
           const { x, y } = pos;
 
-          this._div.style.left = `${x}px`;
-          this._div.style.top = `${y}px`;
+          this._div.style.left = x + 'px';
+          this._div.style.top = y + 'px';
 
           this._onDraw(x, y);
         }

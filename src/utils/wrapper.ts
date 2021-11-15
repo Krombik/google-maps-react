@@ -28,7 +28,7 @@ const wrapper =
         Pick<GetState<Instance, StateKeys>, S>
     >,
     connectedHandlersAndState: Partial<
-      Record<keyof Handlers & HandlerName, StateKeys>
+      Record<keyof Handlers & HandlerName, UnSet<keyof Instance>>
     > = {}
   ) =>
   <H extends keyof Handlers & HandlerName, S extends StateKeys>(
@@ -36,10 +36,10 @@ const wrapper =
     stateNamesList: S[]
   ) =>
     createRender<H, S>(
-      createUseStateAndHandlers<H, S>(
+      createUseStateAndHandlers<H, UnSet<keyof Instance>>(
         handlerNamesList,
         stateNamesList,
-        connectedHandlersAndState as Partial<Record<H, S>>
+        connectedHandlersAndState as Partial<Record<H, UnSet<keyof Instance>>>
       )
     );
 
