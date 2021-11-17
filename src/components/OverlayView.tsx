@@ -12,7 +12,7 @@ type Callbacks = [
   onRemove?: () => void
 ];
 
-const _ = Object.freeze({
+const _ = {
   _getOverlayViewClass: () =>
     class extends google.maps.OverlayView {
       private readonly _div: HTMLElement;
@@ -88,7 +88,7 @@ const _ = Object.freeze({
 
     return this.OverlayView;
   },
-});
+};
 
 declare class _OverlayView extends _.OverlayView {}
 

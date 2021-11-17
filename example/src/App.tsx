@@ -6,15 +6,13 @@ import {
   createMarkerComponent,
   createClusterMarkerComponent,
   MarkerClusterer,
-  Supercluster,
+  useClusterer,
+  OverlayView,
 } from 'google-maps-react';
 
 const options = { apiKey: '' };
 
-const GoogleMap = createGoogleMapComponent(
-  ['onBoundsChanged', 'onCenterChanged', 'onZoomChanged', 'onClick'],
-  ['center', 'zoom']
-);
+const GoogleMap = createGoogleMapComponent(['onBoundsChanged'], []);
 
 const Marker = createMarkerComponent(['onClick'], ['position']);
 
@@ -23,6 +21,11 @@ const style = { height: '100vh', width: '100vw' };
 const c = { lat: 0, lng: 0 };
 
 const Kek = createClusterMarkerComponent([], ['position']);
+
+const getRandomLocation = () => ({
+  lat: Math.random() * (85 * 2) - 85,
+  lng: Math.random() * (180 * 2) - 180,
+});
 
 const locations = [
   { lat: -31.56391, lng: 147.154312 },
@@ -50,62 +53,53 @@ const locations = [
   { lat: -43.999792, lng: 170.463352 },
 ];
 
+const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
+  id: index,
+  ...getRandomLocation(),
+}));
+
 const CGoogleMap = () => {
   const status = useGoogleMapStatus();
-  const [zoom, setZoom] = useState(0);
-  const [markerPos, setMarkerPos] = useState({ lat: 0, lng: 0 });
-  const [asd, setasd] = useState(locations);
-  useEffect(() => {
-    const kek = new Supercluster<{ lat: number; lng: number }>((v) => v);
-    kek.load(locations);
-    console.log(123);
-    console.log(
-      kek.getClusters(
-        [
-          52.92047431441989, -52.695036788568686, -142.10882256058008,
-          10.662755354350752,
-        ],
-        zoom
-      )
-    );
-  }, []);
+  const { getPoints, handleBoundsChange } = useClusterer(randomLocations, {
+    getLatLng: (v) => v,
+    expand: 0.03,
+    delay: 30,
+    radius: 60,
+  });
   if (status === 1)
     return (
       <GoogleMap
         style={style}
-        defaultOptions={{ zoom: 5 }}
-        onBoundsChanged={function (b) {
-          console.log(b);
-          const sw = b.getSouthWest();
-          const ne = b.getNorthEast();
-          console.log(sw.lng(), sw.lat(), ne.lng(), ne.lat());
-        }}
-        onZoomChanged={(zoom) => {
-          setZoom(zoom);
-        }}
-        center={{ lat: 0, lng: 0 }}
-        zoom={zoom}
-        onClick={() => {
-          setasd((k) => [
-            ...k,
-            {
-              lat: Math.random() * (85 * 2) - 85,
-              lng: Math.random() * (180 * 2) - 180,
-            },
-          ]);
-        }}
+        defaultOptions={{ center: { lat: 0, lng: 0 }, zoom: 1 }}
+        onBoundsChanged={handleBoundsChange}
       >
-        <MarkerClusterer>
+        {getPoints(
+          (props) => {
+            return (
+              <OverlayView {...props} key={props.id}>
+                d
+              </OverlayView>
+            );
+          },
+          (props) => {
+            return (
+              <OverlayView {...props} key={props.id}>
+                {props.count}
+              </OverlayView>
+            );
+          }
+        )}
+        {/* <MarkerClusterer>
           {(markerClusterer) =>
-            asd.map((position) => (
+            randomLocations.map((position) => (
               <Kek
                 markerClusterer={markerClusterer}
                 position={position}
-                key={position.lat + position.lng}
+                key={position.id}
               />
             ))
           }
-        </MarkerClusterer>
+        </MarkerClusterer> */}
       </GoogleMap>
     );
 
