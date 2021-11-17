@@ -4,7 +4,10 @@ export { default as createMarkerComponent } from './createComponents/createMarke
 
 export { default as createClusterMarkerComponent } from './createComponents/createClusterMarker';
 
-export { default as Supercluster } from './utils/kekw';
+export {
+  default as useClusterer,
+  UseClustererOptions,
+} from './hooks/useClusterer';
 
 export {
   default as GoogleMapLoader,
@@ -15,3 +18,8 @@ export {
   default as MarkerClusterer,
   MarkerClustererProps,
 } from './components/MarkerClusterer';
+
+export {
+  default as OverlayView,
+  OverlayViewProps,
+} from './components/OverlayView';
