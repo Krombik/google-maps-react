@@ -8,7 +8,16 @@ const fround =
     return tmp[0];
   })(new Float32Array(1));
 
-type Point<T> = XOR<[{ props: T }, { cluster: true; numPoints: number }]> & {
+type Point<T> = XOR<
+  [
+    { props: T },
+    {
+      cluster: true;
+      numPoints: number;
+      props: { key: string; count: number; lat: number; lng: number };
+    }
+  ]
+> & {
   zoom: number;
   parentId: number;
   x: number;
@@ -19,10 +28,10 @@ type Point<T> = XOR<[{ props: T }, { cluster: true; numPoints: number }]> & {
 const getX = <T>(v: Point<T>) => v.x;
 const getY = <T>(v: Point<T>) => v.y;
 
-const pair = (a: number, b: number) => {
-  const sum = a + b;
-  return (sum * (sum + 1)) / 2 + b;
-};
+// const pair = (a: number, b: number) => {
+//   const sum = a + b;
+//   return (sum * (sum + 1)) / 2 + b;
+// };
 
 export type ClustererOptions<T> = {
   minZoom?: number; // min zoom level to cluster the points on
@@ -34,7 +43,8 @@ export type ClustererOptions<T> = {
   getLatLng: (item: T) => google.maps.LatLngLiteral;
 };
 
-export type Bounds = [
+export type GetClustersArg = [
+  zoom: number,
   westLng: number,
   southLat: number,
   eastLng: number,
@@ -96,17 +106,7 @@ export default class Clusterer<T> {
     }
   }
 
-  getClusters(
-    zoom: number,
-    westLng: number,
-    southLat: number,
-    eastLng: number,
-    northLat: number,
-    renderMarker: (props: T) => JSX.Element,
-    renderCluster: (
-      props: google.maps.LatLngLiteral & { count: number; id: number }
-    ) => JSX.Element
-  ): JSX.Element[] {
+  getClusters([zoom, westLng, southLat, eastLng, northLat]: GetClustersArg) {
     let minLng = ((((westLng + 180) % 360) + 360) % 360) - 180;
     const minLat = Math.max(-90, Math.min(90, southLat));
     let maxLng =
@@ -118,54 +118,27 @@ export default class Clusterer<T> {
       maxLng = 180;
     } else if (minLng > maxLng) {
       return [
-        ...this.getClusters(
-          zoom,
-          minLng,
-          minLat,
-          180,
-          maxLat,
-          renderMarker,
-          renderCluster
-        ),
-        ...this.getClusters(
-          zoom,
-          -180,
-          minLat,
-          maxLng,
-          maxLat,
-          renderMarker,
-          renderCluster
-        ),
+        this._getClusters(zoom, minLng, minLat, 180, maxLat),
+        this._getClusters(zoom, -180, minLat, maxLng, maxLat),
       ];
     }
 
+    return [this._getClusters(zoom, minLng, minLat, maxLng, maxLat)];
+  }
+
+  private _getClusters(
+    zoom: number,
+    minLng: number,
+    minLat: number,
+    maxLng: number,
+    maxLat: number
+  ) {
     const tree = this.trees[this._limitZoom(zoom)];
-    const ids = tree.range(
-      lngX(minLng),
-      latY(maxLat),
-      lngX(maxLng),
-      latY(minLat)
-    );
-    const clusters: JSX.Element[] = [];
 
-    const points = tree.points;
-
-    for (let i = ids.length; i--; ) {
-      const p = points[ids[i]];
-
-      clusters.push(
-        p.cluster
-          ? renderCluster({
-              lng: xLng(p.x),
-              lat: yLat(p.y),
-              count: p.numPoints,
-              id: pair(p.x, p.y),
-            })
-          : renderMarker(p.props)
-      );
-    }
-
-    return clusters;
+    return {
+      ids: tree.range(lngX(minLng), latY(maxLat), lngX(maxLng), latY(minLat)),
+      points: tree.points,
+    };
   }
 
   getChildren(clusterId: number): Point<T>[] {
@@ -295,14 +268,22 @@ export default class Clusterer<T> {
 }
 
 function createCluster(x: number, y: number, id: number, numPoints: number) {
+  x = fround(x);
+  y = fround(y);
   return {
-    x: fround(x), // weighted cluster center; round for consistency with Float32Array index
-    y: fround(y),
+    x, // weighted cluster center; round for consistency with Float32Array index
+    y,
     zoom: Infinity, // the last zoom the cluster was processed at
     id, // encodes index of the first child of the cluster and its zoom level
     parentId: -1, // parent cluster id
     numPoints,
     cluster: true as const,
+    props: {
+      key: `${x}${y}`,
+      lng: xLng(x),
+      lat: yLat(y),
+      count: numPoints,
+    },
   };
 }
 
