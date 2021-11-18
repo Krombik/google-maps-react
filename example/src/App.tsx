@@ -62,8 +62,8 @@ const CGoogleMap = () => {
   const status = useGoogleMapStatus();
   const { getPoints, handleBoundsChange } = useClusterer(randomLocations, {
     getLatLng: (v) => v,
-    expand: 0.03,
-    delay: 30,
+    expand: 0.05,
+    delay: 10,
     radius: 60,
   });
   if (status === 1)
@@ -73,22 +73,19 @@ const CGoogleMap = () => {
         defaultOptions={{ center: { lat: 0, lng: 0 }, zoom: 1 }}
         onBoundsChanged={handleBoundsChange}
       >
-        {getPoints(
-          (props) => {
-            return (
-              <OverlayView {...props} key={props.id}>
-                d
-              </OverlayView>
-            );
-          },
-          (props) => {
-            return (
-              <OverlayView {...props} key={props.id}>
-                {props.count}
-              </OverlayView>
-            );
-          }
-        )}
+        {getPoints &&
+          getPoints(
+            (props: any) => {
+              return (
+                <OverlayView {...props} key={props.id}>
+                  d
+                </OverlayView>
+              );
+            },
+            (props: any) => {
+              return <OverlayView {...props}>{props.count}</OverlayView>;
+            }
+          )}
         {/* <MarkerClusterer>
           {(markerClusterer) =>
             randomLocations.map((position) => (
