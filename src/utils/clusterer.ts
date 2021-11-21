@@ -14,7 +14,7 @@ type Point<T> = XOR<
     {
       cluster: true;
       numPoints: number;
-      props: { key: string; count: number; lat: number; lng: number };
+      props: { key: number; count: number; lat: number; lng: number };
     }
   ]
 > & {
@@ -28,17 +28,16 @@ type Point<T> = XOR<
 const getX = <T>(v: Point<T>) => v.x;
 const getY = <T>(v: Point<T>) => v.y;
 
-// const pair = (a: number, b: number) => {
-//   const sum = a + b;
-//   return (sum * (sum + 1)) / 2 + b;
-// };
+const pair = (a: number, b: number) => {
+  const sum = a + b;
+  return (sum * (sum + 1)) / 2 + b;
+};
 
 export type ClustererOptions<T> = {
   minZoom?: number; // min zoom level to cluster the points on
   maxZoom?: number; // max zoom level to cluster the points on
   minPoints?: number; // minimum points to form a cluster
   radius?: number; // cluster radius in pixels
-  extent?: number; // tile extent (radius is calculated relative to it)
   nodeSize?: number; // size of the KD-tree leaf node, affects performance
   getLatLng: (item: T) => google.maps.LatLngLiteral;
 };
@@ -62,7 +61,6 @@ export default class Clusterer<T> {
       maxZoom: 16,
       minPoints: 2,
       radius: 40,
-      extent: 512,
       nodeSize: 64,
       ...options,
     };
@@ -113,28 +111,28 @@ export default class Clusterer<T> {
       eastLng === 180 ? 180 : ((((eastLng + 180) % 360) + 360) % 360) - 180;
     const maxLat = Math.max(-90, Math.min(90, northLat));
 
+    const tree = this.trees[this._limitZoom(zoom)];
+
     if (eastLng - westLng >= 360) {
       minLng = -180;
       maxLng = 180;
     } else if (minLng > maxLng) {
       return [
-        this._getClusters(zoom, minLng, minLat, 180, maxLat),
-        this._getClusters(zoom, -180, minLat, maxLng, maxLat),
+        this._getClusters(tree, minLng, minLat, 180, maxLat),
+        this._getClusters(tree, -180, minLat, maxLng, maxLat),
       ];
     }
 
-    return [this._getClusters(zoom, minLng, minLat, maxLng, maxLat)];
+    return [this._getClusters(tree, minLng, minLat, maxLng, maxLat)];
   }
 
   private _getClusters(
-    zoom: number,
+    tree: KDBush<Point<T>>,
     minLng: number,
     minLat: number,
     maxLng: number,
     maxLat: number
   ) {
-    const tree = this.trees[this._limitZoom(zoom)];
-
     return {
       ids: tree.range(lngX(minLng), latY(maxLat), lngX(maxLng), latY(minLat)),
       points: tree.points,
@@ -152,8 +150,7 @@ export default class Clusterer<T> {
     const origin = index.points[originId];
     if (!origin) throw new Error(errorMsg);
 
-    const r =
-      this.options.radius / (this.options.extent * Math.pow(2, originZoom - 1));
+    const r = this.options.radius / (256 * Math.pow(2, originZoom - 1));
     const ids = index.within(origin.x, origin.y, r);
     const children: Point<T>[] = [];
 
@@ -186,8 +183,8 @@ export default class Clusterer<T> {
 
   private _cluster(points: Point<T>[], zoom: number): Point<T>[] {
     const clusters: Point<T>[] = [];
-    const { radius, extent, minPoints } = this.options;
-    const r = radius / (extent * Math.pow(2, zoom));
+    const { radius, minPoints } = this.options;
+    const r = radius / (256 * Math.pow(2, zoom));
 
     // loop through each point
     for (let i = 0; i < points.length; i++) {
@@ -240,15 +237,16 @@ export default class Clusterer<T> {
           // left points as unclustered
           clusters.push(p);
 
-          if (numPoints > 1) {
-            for (let i = neighborIds.length; i--; ) {
-              const b = tree.points[neighborIds[i]];
-              if (b.zoom > zoom) {
-                b.zoom = zoom;
-                clusters.push(b);
-              }
-            }
-          }
+          // if (numPoints > 1) {
+          //   for (let i = neighborIds.length; i--; ) {
+          //     const b = tree.points[neighborIds[i]];
+          //     if (b.zoom > zoom) {
+          //       console.log(b);
+          //       b.zoom = zoom;
+          //       clusters.push(b);
+          //     }
+          //   }
+          // }
         }
       }
     }
@@ -279,7 +277,7 @@ function createCluster(x: number, y: number, id: number, numPoints: number) {
     numPoints,
     cluster: true as const,
     props: {
-      key: `${x}${y}`,
+      key: pair(x, y),
       lng: xLng(x),
       lat: yLat(y),
       count: numPoints,

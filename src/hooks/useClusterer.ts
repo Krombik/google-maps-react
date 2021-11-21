@@ -12,19 +12,19 @@ export type UseClustererOptions<T> = ClustererOptions<T> & {
 };
 
 type GetPointsO<T> = {
-  getPoints(
-    renderMarker: (props: T) => JSX.Element,
+  getPoints<M, C>(
+    renderMarker: (props: T) => M,
     renderCluster: (
-      props: google.maps.LatLngLiteral & { count: number; key: string }
-    ) => JSX.Element
-  ): JSX.Element[];
+      props: google.maps.LatLngLiteral & { count: number; key: number }
+    ) => C
+  ): (M | C)[];
 };
 
 const getPointsO = <T>(
   t: ReturnType<Clusterer<T>['getClusters']>
 ): GetPointsO<T> => ({
   getPoints(renderMarker, renderCluster) {
-    const clusters: JSX.Element[] = [];
+    const clusters = [];
 
     for (let j = t.length; j--; ) {
       const { ids, points } = t[j];
@@ -50,7 +50,10 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
   const [{ getPoints }, setO] = useState<Partial<GetPointsO<T>>>({});
 
   useEffect(() => {
+    const t1 = performance.now();
     clusterer.load(points);
+
+    console.log(performance.now() - t1);
 
     const data = dataRef.current;
 
