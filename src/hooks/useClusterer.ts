@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Clusterer, {
   ClustererOptions,
+  ClustererPoint,
+  ClusterProps,
   GetClustersArg,
 } from '../utils/clusterer';
 import useConst from './useConst';
@@ -11,29 +13,35 @@ export type UseClustererOptions<T> = ClustererOptions<T> & {
   expand?: number;
 };
 
-type GetPointsO<T> = {
+type State<T> = {
   getPoints<M, C>(
-    renderMarker: (props: T) => M,
-    renderCluster: (
-      props: google.maps.LatLngLiteral & { count: number; key: number }
+    getMarker: (props: T, key: number, coords: google.maps.LatLngLiteral) => M,
+    getCluster: (
+      props: ClusterProps,
+      coords: google.maps.LatLngLiteral,
+      count: number,
+      children: ClustererPoint<T>[]
     ) => C
   ): (M | C)[];
 };
 
-const getPointsO = <T>(
-  t: ReturnType<Clusterer<T>['getClusters']>
-): GetPointsO<T> => ({
-  getPoints(renderMarker, renderCluster) {
+const createState = <T>({
+  ranges,
+  points,
+}: ReturnType<Clusterer<T>['getClusters']>): State<T> => ({
+  getPoints(getMarker, getCluster) {
     const clusters = [];
 
-    for (let j = t.length; j--; ) {
-      const { ids, points } = t[j];
+    for (let j = ranges.length; j--; ) {
+      const ids = ranges[j];
 
       for (let i = ids.length; i--; ) {
         const p = points[ids[i]];
 
         clusters.push(
-          p.cluster ? renderCluster(p.props) : renderMarker(p.props)
+          p.children
+            ? getCluster(p.p, p.coords, p.count, p.children)
+            : getMarker(p.p, p.key, p.coords)
         );
       }
     }
@@ -45,32 +53,29 @@ const getPointsO = <T>(
 const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
   const clusterer = useConst(() => new Clusterer<T>(options));
 
-  const dataRef = useRef<GetClustersArg>();
+  const argsRef = useRef<GetClustersArg>();
 
-  const [{ getPoints }, setO] = useState<Partial<GetPointsO<T>>>({});
+  const [{ getPoints }, setState] = useState<Partial<State<T>>>({});
 
   useEffect(() => {
-    const t1 = performance.now();
     clusterer.load(points);
 
-    console.log(performance.now() - t1);
+    const args = argsRef.current;
 
-    const data = dataRef.current;
-
-    if (data) {
-      setO(getPointsO(clusterer.getClusters(data)));
+    if (args) {
+      setState(createState(clusterer.getClusters(args)));
     }
   }, [points]);
 
   const handleBoundsChange = useConst(() => {
     const { delay = 16, expand = 0 } = options;
 
-    const updateData: (args: GetClustersArg) => GetClustersArg = expand
+    const updateArgs: (args: GetClustersArg) => GetClustersArg = expand
       ? ([zoom, westLng, southLat, eastLng, northLat]) => {
           const lngAdj = (eastLng - westLng) * expand;
           const latAdj = (northLat - southLat) * expand;
 
-          return (dataRef.current = [
+          return (argsRef.current = [
             zoom,
             westLng - lngAdj,
             southLat - latAdj,
@@ -78,7 +83,7 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
             northLat + latAdj,
           ]);
         }
-      : (args) => (dataRef.current = args);
+      : (args) => (argsRef.current = args);
 
     return throttle(function (
       this: google.maps.Map,
@@ -87,10 +92,10 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
 
-      setO(
-        getPointsO(
+      setState(
+        createState(
           clusterer.getClusters(
-            updateData([
+            updateArgs([
               this.getZoom()!,
               sw.lng(),
               sw.lat(),

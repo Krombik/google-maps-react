@@ -8,6 +8,7 @@ import {
   MarkerClusterer,
   useClusterer,
   OverlayView,
+  useGoogleMap,
 } from 'google-maps-react';
 
 const options = { apiKey: '' };
@@ -60,38 +61,42 @@ const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
 
 const c1 = 10000;
 
-(window as any).kek1 = () => {
-  const t1 = performance.now();
-  for (let i = 0; i < c1; i++) {
-    const arr = [];
-    for (let i = randomLocations.length; i--; ) {
-      const p = randomLocations[i];
-      arr.push(Math.pow(2, p.lat) * Math.pow(3, p.lng));
-    }
-  }
-  console.log((performance.now() - t1) / c1);
+// (window as any).kek1 = () => {
+//   const t1 = performance.now();
+//   for (let i = 0; i < c1; i++) {
+//     const arr = [];
+//     for (let i = randomLocations.length; i--; ) {
+//       const p = randomLocations[i];
+//       arr.push(Math.pow(2, p.lat) * Math.pow(3, p.lng));
+//     }
+//   }
+//   console.log((performance.now() - t1) / c1);
+// };
+
+const kek = {
+  padding: '5px',
+  background: 'white',
+  borderRadius: '50%',
+  cursor: 'pointer',
+  transform: 'translate(-50%,-50%)',
 };
 
-const pair = (a: number, b: number) => {
-  const sum = a + b;
-  return (sum * (sum + 1)) / 2 + b;
-};
-
-(window as any).kek2 = () => {
-  const t1 = performance.now();
-  for (let i = 0; i < c1; i++) {
-    const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
-      id: index,
-      ...getRandomLocation(),
-    }));
-    const arr = [];
-    for (let i = randomLocations.length; i--; ) {
-      const p = randomLocations[i];
-      arr.push(pair(p.lat, p.lng));
-    }
-    if (arr.length !== Array.from(new Set(arr)).length) console.log('huinia');
-  }
-  console.log((performance.now() - t1) / c1);
+const M = (props: any) => {
+  const map = useGoogleMap();
+  return (
+    <OverlayView {...props} mapPaneLayer='floatPane'>
+      <div
+        onClick={() => {
+          map.setZoom(props.zoom + 1);
+          map.panTo(props);
+          console.log(props.zoom);
+        }}
+        style={kek}
+      >
+        {props.count}
+      </div>
+    </OverlayView>
+  );
 };
 
 const CGoogleMap = () => {
@@ -111,15 +116,15 @@ const CGoogleMap = () => {
       >
         {getPoints &&
           getPoints(
-            (props) => {
+            (_, key, coords) => {
               return (
-                <OverlayView {...props} key={props.id}>
+                <OverlayView {...coords} key={key}>
                   d
                 </OverlayView>
               );
             },
-            (props) => {
-              return <OverlayView {...props}>{props.count}</OverlayView>;
+            (props, coords, count) => {
+              return <M {...props} {...coords} count={count} />;
             }
           )}
         {/* <MarkerClusterer>

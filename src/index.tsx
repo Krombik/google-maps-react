@@ -9,6 +9,8 @@ export {
   UseClustererOptions,
 } from './hooks/useClusterer';
 
+export { default as useGoogleMap } from './hooks/useGoogleMap';
+
 export {
   default as GoogleMapLoader,
   useGoogleMapStatus,
