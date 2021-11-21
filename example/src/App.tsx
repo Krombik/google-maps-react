@@ -58,31 +58,67 @@ const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
   ...getRandomLocation(),
 }));
 
+const c1 = 10000;
+
+(window as any).kek1 = () => {
+  const t1 = performance.now();
+  for (let i = 0; i < c1; i++) {
+    const arr = [];
+    for (let i = randomLocations.length; i--; ) {
+      const p = randomLocations[i];
+      arr.push(Math.pow(2, p.lat) * Math.pow(3, p.lng));
+    }
+  }
+  console.log((performance.now() - t1) / c1);
+};
+
+const pair = (a: number, b: number) => {
+  const sum = a + b;
+  return (sum * (sum + 1)) / 2 + b;
+};
+
+(window as any).kek2 = () => {
+  const t1 = performance.now();
+  for (let i = 0; i < c1; i++) {
+    const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
+      id: index,
+      ...getRandomLocation(),
+    }));
+    const arr = [];
+    for (let i = randomLocations.length; i--; ) {
+      const p = randomLocations[i];
+      arr.push(pair(p.lat, p.lng));
+    }
+    if (arr.length !== Array.from(new Set(arr)).length) console.log('huinia');
+  }
+  console.log((performance.now() - t1) / c1);
+};
+
 const CGoogleMap = () => {
   const status = useGoogleMapStatus();
   const { getPoints, handleBoundsChange } = useClusterer(randomLocations, {
     getLatLng: (v) => v,
     expand: 0.05,
-    delay: 10,
+    delay: 16,
     radius: 60,
   });
   if (status === 1)
     return (
       <GoogleMap
         style={style}
-        defaultOptions={{ center: { lat: 0, lng: 0 }, zoom: 1 }}
+        defaultOptions={{ center: { lat: 0, lng: 0 }, zoom: 5 }}
         onBoundsChanged={handleBoundsChange}
       >
         {getPoints &&
           getPoints(
-            (props: any) => {
+            (props) => {
               return (
                 <OverlayView {...props} key={props.id}>
                   d
                 </OverlayView>
               );
             },
-            (props: any) => {
+            (props) => {
               return <OverlayView {...props}>{props.count}</OverlayView>;
             }
           )}
