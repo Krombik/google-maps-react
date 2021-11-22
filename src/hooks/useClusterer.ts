@@ -7,6 +7,7 @@ import Clusterer, {
 } from '../utils/clusterer';
 import useConst from './useConst';
 import throttle from 'lodash.throttle';
+import { GoogleMapsHandlers } from '../createComponents/createGoogleMap';
 
 export type UseClustererOptions<T> = ClustererOptions<T> & {
   /**
@@ -93,10 +94,7 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
         }
       : (args) => (argsRef.current = args);
 
-    return throttle(function (
-      this: google.maps.Map,
-      bounds: google.maps.LatLngBounds
-    ) {
+    return throttle<GoogleMapsHandlers['onBoundsChanged']>(function (bounds) {
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
 
@@ -113,8 +111,7 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
           )
         )
       );
-    },
-    delay);
+    }, delay);
   });
 
   return { handleBoundsChange, getPoints };
