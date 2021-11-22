@@ -9,8 +9,14 @@ import useConst from './useConst';
 import throttle from 'lodash.throttle';
 
 export type UseClustererOptions<T> = ClustererOptions<T> & {
+  /**
+   * @method handleBoundsChange throttle delay
+   */
   delay?: number;
-  expand?: number;
+  /**
+   * @method handleBoundsChange expand bounds by percent
+   */
+  expandBy?: number;
 };
 
 type State<T> = {
@@ -38,9 +44,11 @@ const createState = <T>({
       for (let i = ids.length; i--; ) {
         const p = points[ids[i]];
 
+        const children = p.children;
+
         clusters.push(
-          p.children
-            ? getCluster(p.p, p.coords, p.count, p.children)
+          children
+            ? getCluster(p.p, p.coords, p.count, children)
             : getMarker(p.p, p.key, p.coords)
         );
       }
@@ -68,12 +76,12 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
   }, [points]);
 
   const handleBoundsChange = useConst(() => {
-    const { delay = 16, expand = 0 } = options;
+    const { delay = 16, expandBy = 0 } = options;
 
-    const updateArgs: (args: GetClustersArg) => GetClustersArg = expand
+    const updateArgs: (args: GetClustersArg) => GetClustersArg = expandBy
       ? ([zoom, westLng, southLat, eastLng, northLat]) => {
-          const lngAdj = (eastLng - westLng) * expand;
-          const latAdj = (northLat - southLat) * expand;
+          const lngAdj = (eastLng - westLng) * expandBy;
+          const latAdj = (northLat - southLat) * expandBy;
 
           return (argsRef.current = [
             zoom,

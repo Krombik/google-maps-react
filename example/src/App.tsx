@@ -103,7 +103,7 @@ const CGoogleMap = () => {
   const status = useGoogleMapStatus();
   const { getPoints, handleBoundsChange } = useClusterer(randomLocations, {
     getLatLng: (v) => v,
-    expand: 0.05,
+    expandBy: 0.05,
     delay: 16,
     radius: 60,
   });
