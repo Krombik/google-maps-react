@@ -10,7 +10,7 @@ import { MapContext } from '../hooks/useGoogleMap';
 import wrapper from '../utils/wrapper';
 import noop from '../utils/noop';
 
-type Handlers = {
+export type GoogleMapsHandlers = {
   onBoundsChanged(
     this: google.maps.Map,
     bounds: GetValue<google.maps.Map, 'bounds'>
@@ -66,7 +66,7 @@ type Props = PropsWithChildren<{
 const createGoogleMapComponent = wrapper<
   google.maps.Map,
   Props,
-  Handlers,
+  GoogleMapsHandlers,
   | 'center'
   | 'clickableIcons'
   | 'heading'
