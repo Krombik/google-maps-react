@@ -9,13 +9,15 @@ import useConst from './useConst';
 import throttle from 'lodash.throttle';
 import { GoogleMapsHandlers } from '../createComponents/createGoogleMap';
 
+export type kek = ReturnType<typeof useClusterer>['handleBoundsChange'];
+
 export type UseClustererOptions<T> = ClustererOptions<T> & {
   /**
-   * @method handleBoundsChange throttle delay
+   * {@link useClusterer handleBoundsChange} throttle delay
    */
   delay?: number;
   /**
-   * @method handleBoundsChange expand bounds by percent
+   * @param {ReturnType<typeof useClusterer>['handleBoundsChange']} handleBoundsChange expand bounds by percent
    */
   expandBy?: number;
 };
@@ -67,7 +69,9 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
   const [{ getPoints }, setState] = useState<Partial<State<T>>>({});
 
   useEffect(() => {
+    const t1 = performance.now();
     clusterer.load(points);
+    console.log(performance.now() - t1);
 
     const args = argsRef.current;
 
@@ -76,6 +80,9 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
     }
   }, [points]);
 
+  /**
+   * {@link useClusterer~handleBoundsChange} throttle delay
+   */
   const handleBoundsChange = useConst(() => {
     const { delay = 16, expandBy = 0 } = options;
 
@@ -98,19 +105,25 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
 
-      setState(
-        createState(
-          clusterer.getClusters(
-            updateArgs([
-              this.getZoom()!,
-              sw.lng(),
-              sw.lat(),
-              ne.lng(),
-              ne.lat(),
-            ])
-          )
-        )
+      const t1 = performance.now();
+      clusterer.getClusters(
+        updateArgs([this.getZoom()!, sw.lng(), sw.lat(), ne.lng(), ne.lat()])
       );
+      console.log(performance.now() - t1);
+
+      // setState(
+      //   createState(
+      //     clusterer.getClusters(
+      //       updateArgs([
+      //         this.getZoom()!,
+      //         sw.lng(),
+      //         sw.lat(),
+      //         ne.lng(),
+      //         ne.lat(),
+      //       ])
+      //     )
+      //   )
+      // );
     }, delay);
   });
 
