@@ -24,7 +24,7 @@ export type UseClustererOptions<T> = ClustererOptions<T> & {
 
 type State<T> = {
   getPoints<M, C>(
-    getMarker: (props: T, key: number, coords: google.maps.LatLngLiteral) => M,
+    getMarker: (props: T) => M,
     getCluster: (
       props: ClusterProps,
       coords: google.maps.LatLngLiteral,
@@ -34,27 +34,20 @@ type State<T> = {
   ): (M | C)[];
 };
 
-const createState = <T>({
-  ranges,
-  points,
-}: ReturnType<Clusterer<T>['getClusters']>): State<T> => ({
+const createState = <T>(
+  points: ReturnType<Clusterer<T>['getClusters']>
+): State<T> => ({
   getPoints(getMarker, getCluster) {
     const clusters = [];
 
-    for (let j = ranges.length; j--; ) {
-      const ids = ranges[j];
+    for (let i = points.length; i--; ) {
+      const p = points[i];
 
-      for (let i = ids.length; i--; ) {
-        const p = points[ids[i]];
+      const children = p.items;
 
-        const children = p.children;
-
-        clusters.push(
-          children
-            ? getCluster(p.p, p.coords, p.count, children)
-            : getMarker(p.p, p.key, p.coords)
-        );
-      }
+      clusters.push(
+        children ? getCluster(p, p.coords, p.count, children) : getMarker(p)
+      );
     }
 
     return clusters;
@@ -105,25 +98,23 @@ const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
       const sw = bounds.getSouthWest();
       const ne = bounds.getNorthEast();
 
-      const t1 = performance.now();
       clusterer.getClusters(
         updateArgs([this.getZoom()!, sw.lng(), sw.lat(), ne.lng(), ne.lat()])
       );
-      console.log(performance.now() - t1);
 
-      // setState(
-      //   createState(
-      //     clusterer.getClusters(
-      //       updateArgs([
-      //         this.getZoom()!,
-      //         sw.lng(),
-      //         sw.lat(),
-      //         ne.lng(),
-      //         ne.lat(),
-      //       ])
-      //     )
-      //   )
-      // );
+      setState(
+        createState(
+          clusterer.getClusters(
+            updateArgs([
+              this.getZoom()!,
+              sw.lng(),
+              sw.lat(),
+              ne.lng(),
+              ne.lat(),
+            ])
+          )
+        )
+      );
     }, delay);
   });
 
