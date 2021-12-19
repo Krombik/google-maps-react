@@ -23,26 +23,18 @@ export type ClustererPoint<T> = XOR<
 };
 
 export type ClustererOptions<T> = {
-  /*
+  /**
    * Min zoom level to cluster the points on
    */
   minZoom?: number;
-  /*
+  /**
    * Max zoom level to cluster the points on
    */
   maxZoom?: number;
-  /*
-   * Minimum points to form a cluster
-   */
-  minPoints?: number;
-  /*
+  /**
    * Cluster radius in pixels
    */
   radius?: number;
-  /**
-   * Size of the KD-tree leaf node, affects performance
-   */
-  nodeSize?: number;
   getLatLng: (item: T) => [lat: number, lng: number];
 };
 
@@ -85,7 +77,7 @@ type QueueItems = [
 
 type Queue = [yMax: number, queueItems: QueueItems];
 
-const addToMap = (
+const addDot = (
   map: Map<number, [x: number, p: any]>,
   arr: number[],
   y: number,
@@ -100,7 +92,7 @@ const addToMap = (
   }
 };
 
-const addDotsToMap = (queueItems: QueueItems, map: any, arr: number[]) => {
+const addDots = (queueItems: QueueItems, map: any, arr: number[]) => {
   // const clusters = [];
 
   for (let j = 2; j < queueItems.length; j += 3) {
@@ -114,47 +106,16 @@ const addDotsToMap = (queueItems: QueueItems, map: any, arr: number[]) => {
       const y = yx[0] / l;
       const x = yx[1] / l;
 
-      addToMap(map, arr, y, x, {
+      addDot(map, arr, y, x, {
         items,
         lat: yToLat(y),
         lng: xToLng(x),
         key: pair(x, y),
       });
     } else {
-      addToMap(map, arr, items[0], items[1], items[2]);
+      addDot(map, arr, items[0], items[1], items[2]);
     }
   }
-};
-
-const tryToCluster = (queueItems: QueueItems, y: number, x: number, p: any) => {
-  let clustered = false;
-  for (let i = 0; i < queueItems.length; i += 3) {
-    if (x >= queueItems[i] && x <= queueItems[i + 1]) {
-      const items = queueItems[i + 2] as QueueItems[2];
-
-      items[0] += y;
-      items[1] += x;
-      items.push(p);
-
-      clustered = true;
-    }
-  }
-
-  return clustered;
-};
-
-const tryToClusteringQueue = (
-  queue: Queue,
-  startIndex: number,
-  y: number,
-  x: number,
-  p: any
-) => {
-  for (let j = startIndex; j < queue.length; j += 2) {
-    if (tryToCluster(queue[j] as QueueItems, y, x, p)) return true;
-  }
-
-  return false;
 };
 
 const pair = (a: number, b: number) => {
@@ -177,7 +138,7 @@ const getBounds = (
   let end = arrY.length - 1;
 
   while (arrY[start] < minY) {
-    let middle = Math.floor((start + end) / 2);
+    const middle = Math.floor((start + end) / 2);
 
     if (minY < arrY[middle]) {
       end = middle - 1;
@@ -191,7 +152,7 @@ const getBounds = (
   const first = start;
 
   while (arrY[end] > maxY) {
-    let middle = Math.floor((start + end) / 2);
+    const middle = Math.floor((start + end) / 2);
 
     if (maxY < arrY[middle]) {
       end = middle - 1;
@@ -213,27 +174,65 @@ const getBounds = (
   }
 };
 
-const keksw = (
+const clusteringQueueItems = (
+  queueItems: QueueItems,
   y: number,
+  x: number,
+  p: any
+) => {
+  let clustered = false;
+
+  for (let i = 0; i < queueItems.length; i += 3) {
+    if (x >= queueItems[i] && x <= queueItems[i + 1]) {
+      const items = queueItems[i + 2] as QueueItems[2];
+
+      items[0] += y;
+      items[1] += x;
+      items.push(p);
+
+      clustered = true;
+    }
+  }
+
+  return clustered;
+};
+
+const clusteringQueue = (
+  queue: Queue,
+  startIndex: number,
+  y: number,
+  x: number,
+  p: any
+) => {
+  for (let j = startIndex; j < queue.length; j += 2) {
+    if (clusteringQueueItems(queue[j] as QueueItems, y, x, p)) return true;
+  }
+
+  return false;
+};
+
+const mutateQueue = (
   queue: Queue,
   data: Map<'i' | 'c', number | boolean>,
+  y: number,
   arrX: [x: number, p: any],
   r: number
 ) => {
-  let lastQueueIndex = data.get('i') as number;
+  let i = data.get('i') as number;
 
-  while (y > queue[lastQueueIndex]) {
-    lastQueueIndex += 2;
+  while (y > queue[i]) {
+    i += 2;
   }
 
-  data.set('i', lastQueueIndex);
+  data.set('i', i);
 
   let notPushed = true;
 
-  for (let k = 0; k < arrX.length; k += 2) {
-    const x = arrX[k];
-    const p = arrX[k + 1];
-    if (!tryToClusteringQueue(queue, lastQueueIndex + 1, y, x, p)) {
+  for (let j = 0; j < arrX.length; j += 2) {
+    const x = arrX[j];
+    const p = arrX[j + 1];
+
+    if (!clusteringQueue(queue, i + 1, y, x, p)) {
       if (notPushed) {
         queue.push(y + 2 * r, [x - r, x + r, [y, x, p]]);
 
@@ -249,7 +248,7 @@ const keksw = (
 
 class Clusterer<T> {
   private _options: Required<ClustererOptions<T>>;
-  private _trees = new Map<
+  private _store = new Map<
     number,
     { map: Map<number, [x: number, p: any]>; arrY: Float64Array }
   >();
@@ -258,15 +257,13 @@ class Clusterer<T> {
     this._options = {
       minZoom: 0,
       maxZoom: 16,
-      minPoints: 2,
       radius: 40,
-      nodeSize: 64,
       ...options,
     };
   }
 
   load(points: T[]) {
-    const { minZoom, maxZoom, getLatLng } = this._options;
+    const { minZoom, maxZoom, getLatLng, radius } = this._options;
 
     const map = new Map<number, [x: number, p: any]>();
 
@@ -277,17 +274,16 @@ class Clusterer<T> {
 
       const latLng = getLatLng(p);
 
-      addToMap(map, arr, latToY(latLng[0]), lngToX(latLng[1]), p);
+      addDot(map, arr, latToY(latLng[0]), lngToX(latLng[1]), p);
     }
 
-    const trees = this._trees;
+    const store = this._store;
+    store.set(maxZoom + 1, { map, arrY: new Float64Array(arr).sort() });
 
-    trees.set(maxZoom + 1, { map, arrY: new Float64Array(arr).sort() });
+    const fn = (z: number) => {
+      const r = radius / (256 * Math.pow(2, z));
 
-    for (let z = maxZoom; z >= minZoom; z--) {
-      const r = 60 / (256 * Math.pow(2, z));
-
-      const tree = trees.get(z + 1)!;
+      const tree = store.get(z + 1)!;
 
       const { map, arrY } = tree;
 
@@ -297,33 +293,35 @@ class Clusterer<T> {
 
       const data = new Map();
       data.set('i', 0);
-
       for (let i = 0; i < l; i++) {
         const y = arrY[i];
-        keksw(y, queue, data, map.get(y)!, r);
+
+        mutateQueue(queue, data, y, map.get(y)!, r);
       }
 
       // console.log(queue, map);
-
       if (data.has('c')) {
         const currMap = new Map<number, [x: number, p: any]>();
         const currArrY: number[] = [];
         for (let i = 1; i < queue.length; i += 2) {
-          addDotsToMap(queue[i] as QueueItems, currMap, currArrY);
+          addDots(queue[i] as QueueItems, currMap, currArrY);
         }
-
-        trees.set(z, {
+        store.set(z, {
           map: currMap,
           arrY: new Float64Array(currArrY).sort(),
         });
       } else {
-        trees.set(z, tree);
+        store.set(z, tree);
       }
+    };
+
+    for (let z = maxZoom; z >= minZoom; z--) {
+      fn(z);
     }
   }
 
   getClusters([zoom, westLng, southLat, eastLng, northLat]: GetClustersArg) {
-    const tree = this._trees.get(this._limitZoom(zoom))!;
+    const tree = this._store.get(this._limitZoom(zoom))!;
 
     const minY = boundedLatToY(northLat);
     const maxY = boundedLatToY(southLat);

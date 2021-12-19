@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import Clusterer, {
-  ClustererOptions,
-  ClustererPoint,
-  ClusterProps,
-  GetClustersArg,
-} from '../utils/clusterer';
 import useConst from './useConst';
 import throttle from 'lodash.throttle';
 import { GoogleMapsHandlers } from '../createComponents/createGoogleMap';
+import MarkerCluster, { ClustererOptions } from 'marker-cluster';
 
 export type kek = ReturnType<typeof useClusterer>['handleBoundsChange'];
 
@@ -24,99 +19,75 @@ export type UseClustererOptions<T> = ClustererOptions<T> & {
 
 type State<T> = {
   getPoints<M, C>(
-    getMarker: (props: T) => M,
-    getCluster: (
-      props: ClusterProps,
-      coords: google.maps.LatLngLiteral,
-      count: number,
-      children: ClustererPoint<T>[]
-    ) => C
+    getMarker: (props: any) => M,
+    getCluster: (p: any) => C
   ): (M | C)[];
 };
 
-const createState = <T>(
-  points: ReturnType<Clusterer<T>['getClusters']>
-): State<T> => ({
-  getPoints(getMarker, getCluster) {
-    const clusters = [];
+// const createState = <T>(
+//   points: ReturnType<Clusterer<T>['getClusters']>
+// ): State<T> => ({
+//   getPoints(getMarker, getCluster) {
+//     const clusters = [];
 
-    for (let i = points.length; i--; ) {
-      const p = points[i];
+//     for (let i = points.length; i--; ) {
+//       const p = points[i];
 
-      const children = p.items;
+//       const children = p.items;
 
-      clusters.push(
-        children ? getCluster(p, p.coords, p.count, children) : getMarker(p)
-      );
-    }
+//       clusters.push(
+//         children ? getCluster(p, p.coords, p.count, children) : getMarker(p)
+//       );
+//     }
 
-    return clusters;
-  },
-});
+//     return clusters;
+//   },
+// });
 
-const useClusterer = <T>(points: T[], options: UseClustererOptions<T>) => {
-  const clusterer = useConst(() => new Clusterer<T>(options));
-
-  const argsRef = useRef<GetClustersArg>();
+const useClusterer = <T>(points: T[], options: ClustererOptions<T>) => {
+  const markerCluster = useConst(() => new MarkerCluster<T>(options));
 
   const [{ getPoints }, setState] = useState<Partial<State<T>>>({});
 
+  const argsRef = useRef<[number, number, number, number, number]>();
+
   useEffect(() => {
     const t1 = performance.now();
-    clusterer.load(points);
+    markerCluster.load(points);
     console.log(performance.now() - t1);
 
     const args = argsRef.current;
 
     if (args) {
-      setState(createState(clusterer.getClusters(args)));
+      setState({
+        getPoints: (...kek: any) => markerCluster.getPoints(...args, ...kek),
+      } as any);
     }
   }, [points]);
 
   /**
-   * {@link useClusterer~handleBoundsChange} throttle delay
+   * {@link useClusterer=>handleBoundsChange} throttle delay
    */
-  const handleBoundsChange = useConst(() => {
-    const { delay = 16, expandBy = 0 } = options;
+  const handleBoundsChange: GoogleMapsHandlers['onBoundsChanged'] = function (
+    bounds
+  ) {
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
 
-    const updateArgs: (args: GetClustersArg) => GetClustersArg = expandBy
-      ? ([zoom, westLng, southLat, eastLng, northLat]) => {
-          const lngAdj = (eastLng - westLng) * expandBy;
-          const latAdj = (northLat - southLat) * expandBy;
+    const args = [
+      this.getZoom()!,
+      sw.lng(),
+      sw.lat(),
+      ne.lng(),
+      ne.lat(),
+    ] as const;
 
-          return (argsRef.current = [
-            zoom,
-            westLng - lngAdj,
-            southLat - latAdj,
-            eastLng + lngAdj,
-            northLat + latAdj,
-          ]);
-        }
-      : (args) => (argsRef.current = args);
+    argsRef.current = args as any;
 
-    return throttle<GoogleMapsHandlers['onBoundsChanged']>(function (bounds) {
-      const sw = bounds.getSouthWest();
-      const ne = bounds.getNorthEast();
-
-      clusterer.getClusters(
-        updateArgs([this.getZoom()!, sw.lng(), sw.lat(), ne.lng(), ne.lat()])
-      );
-
-      setState(
-        createState(
-          clusterer.getClusters(
-            updateArgs([
-              this.getZoom()!,
-              sw.lng(),
-              sw.lat(),
-              ne.lng(),
-              ne.lat(),
-            ])
-          )
-        )
-      );
-    }, delay);
-  });
+    setState({
+      getPoints: (...kek: any) => markerCluster.getPoints(...args, ...kek),
+    } as any);
+  };
 
   return { handleBoundsChange, getPoints };
 };
