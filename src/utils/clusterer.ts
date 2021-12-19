@@ -127,6 +127,7 @@ const addDotsToMap = (queueItems: QueueItems, map: any, arr: number[]) => {
 };
 
 const tryToCluster = (queueItems: QueueItems, y: number, x: number, p: any) => {
+  let clustered = false;
   for (let i = 0; i < queueItems.length; i += 3) {
     if (x >= queueItems[i] && x <= queueItems[i + 1]) {
       const items = queueItems[i + 2] as QueueItems[2];
@@ -135,26 +136,11 @@ const tryToCluster = (queueItems: QueueItems, y: number, x: number, p: any) => {
       items[1] += x;
       items.push(p);
 
-      return true;
+      clustered = true;
     }
   }
 
-  return false;
-};
-
-const getQueueItems = (arrX: any, r: number, y: number) => {
-  const x = arrX[0];
-
-  const items: QueueItems = [x - r, x + r, [y, x, arrX[1]]];
-
-  for (let k = 2; k < arrX.length; k += 2) {
-    const x = arrX[k];
-    const p = arrX[k + 1];
-
-    if (!tryToCluster(items, y, x, p)) items.push(x - r, x + r, [y, x, p]);
-  }
-
-  return items;
+  return clustered;
 };
 
 const tryToClusteringQueue = (
@@ -227,6 +213,40 @@ const getBounds = (
   }
 };
 
+const keksw = (
+  y: number,
+  queue: Queue,
+  data: Map<'i' | 'c', number | boolean>,
+  arrX: [x: number, p: any],
+  r: number
+) => {
+  let lastQueueIndex = data.get('i') as number;
+
+  while (y > queue[lastQueueIndex]) {
+    lastQueueIndex += 2;
+  }
+
+  data.set('i', lastQueueIndex);
+
+  let notPushed = true;
+
+  for (let k = 0; k < arrX.length; k += 2) {
+    const x = arrX[k];
+    const p = arrX[k + 1];
+    if (!tryToClusteringQueue(queue, lastQueueIndex + 1, y, x, p)) {
+      if (notPushed) {
+        queue.push(y + 2 * r, [x - r, x + r, [y, x, p]]);
+
+        notPushed = false;
+      } else {
+        (queue[queue.length - 1] as QueueItems).push(x - r, x + r, [y, x, p]);
+      }
+    } else {
+      data.set('c', true);
+    }
+  }
+};
+
 class Clusterer<T> {
   private _options: Required<ClustererOptions<T>>;
   private _trees = new Map<
@@ -273,50 +293,19 @@ class Clusterer<T> {
 
       const l = arrY.length;
 
-      const y0 = arrY[0];
+      const queue: Queue = [] as any;
 
-      const queue: Queue = [y0 + 2 * r, getQueueItems(map.get(y0)!, r, y0)];
+      const data = new Map();
+      data.set('i', 0);
 
-      let clustered = false;
-
-      for (let i = 1, lastQueueIndex = 0; i < l; i++) {
+      for (let i = 0; i < l; i++) {
         const y = arrY[i];
-
-        while (y > queue[lastQueueIndex]) {
-          lastQueueIndex += 2;
-        }
-
-        const arrX = map.get(y)!;
-
-        let notPushed = true;
-
-        for (let k = 0; k < arrX.length; k += 2) {
-          if (
-            !tryToClusteringQueue(
-              queue,
-              lastQueueIndex + 1,
-              y,
-              arrX[k],
-              arrX[k + 1]
-            )
-          ) {
-            const x = arrX[k];
-
-            const arr: QueueItems = [x - r, x + r, [y, x, arrX[k + 1]]];
-            if (notPushed) {
-              queue.push(y + 2 * r, arr);
-
-              notPushed = false;
-            } else {
-              (queue[queue.length - 1] as QueueItems).push(...arr);
-            }
-          } else {
-            clustered = true;
-          }
-        }
+        keksw(y, queue, data, map.get(y)!, r);
       }
 
-      if (clustered) {
+      // console.log(queue, map);
+
+      if (data.has('c')) {
         const currMap = new Map<number, [x: number, p: any]>();
         const currArrY: number[] = [];
         for (let i = 1; i < queue.length; i += 2) {
