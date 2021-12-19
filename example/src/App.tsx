@@ -61,25 +61,26 @@ const c1 = 10000;
 
 (window as any).kek1 = () => {
   const t1 = performance.now();
-  for (let i = 0; i < c1; i++) {
-    const a = [];
-    for (let i = 0; i < 10000; i++) {
-      a.push(Math.random());
-    }
-    const a64 = new Float64Array(a);
-  }
-  console.log((performance.now() - t1) / c1);
+  // for (let i = 0; i < c1; i++) {
+
+  // }
+
+  // const a2 = new Float64Array([...(a1 as any)]);
+  // a2.sort();
+  // console.log(performance.now() - t1);
 };
+
+// console.log(fn());
 
 (window as any).kek2 = () => {
   const t1 = performance.now();
-  for (let i = 0; i < c1; i++) {
-    const a64 = new Float64Array(10000);
-    for (let i = 0; i < a64.length; i++) {
-      a64[i] = Math.random();
-    }
-  }
-  console.log((performance.now() - t1) / c1);
+  // for (let i = 0; i < c1; i++) {
+  //   const a64 = new Float64Array(10000);
+  //   for (let i = 0; i < a64.length; i++) {
+  //     a64[i] = Math.random();
+  //   }
+  // }
+  console.log(performance.now() - t1);
 };
 
 const kek = {
@@ -121,8 +122,6 @@ const CGoogleMap = () => {
   const status = useGoogleMapStatus();
   const { getPoints, handleBoundsChange } = useClusterer(randomLocations, {
     getLatLng: (v) => [v.lat, v.lng],
-    expandBy: 0,
-    delay: 16,
     radius: 60,
   });
   // console.log(getPoints());
@@ -142,13 +141,15 @@ const CGoogleMap = () => {
           getPoints(
             (p) => {
               return (
-                <OverlayView key={p.id} {...p}>
+                <OverlayView key={p.key} {...p.marker}>
                   <span style={kser}>d</span>
                 </OverlayView>
               );
             },
-            (props, coords, count) => {
-              return <M {...props} {...coords} count={count} />;
+            (props) => {
+              return (
+                <M {...props} lat={props.coords[0]} lng={props.coords[1]} />
+              );
             }
           )}
         {/* <MarkerClusterer>
