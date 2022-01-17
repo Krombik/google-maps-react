@@ -139,18 +139,17 @@ const CGoogleMap = () => {
         ))} */}
         {getPoints &&
           getPoints(
-            (p) => {
+            (p, key) => {
               return (
-                <OverlayView key={p.key} {...p.marker}>
+                <OverlayView key={key} lat={p.lat} lng={p.lng}>
                   <span style={kser}>d</span>
                 </OverlayView>
               );
             },
-            (props) => {
-              return (
-                <M {...props} lat={props.coords[0]} lng={props.coords[1]} />
-              );
-            }
+            (count, key, lat, lng) => {
+              return <M count={count} key={key} lat={lat} lng={lng} />;
+            },
+            10
           )}
         {/* <MarkerClusterer>
           {(markerClusterer) =>

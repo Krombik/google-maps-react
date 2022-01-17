@@ -19,8 +19,9 @@ export type UseClustererOptions<T> = ClustererOptions<T> & {
 
 type State<T> = {
   getPoints<M, C>(
-    getMarker: (props: any) => M,
-    getCluster: (p: any) => C
+    getMarker: (point: T, key: number, lat: number, lng: number) => M,
+    getCluster: (count: number, id: number, lat: number, lng: number) => C,
+    extend?: number
   ): (M | C)[];
 };
 
@@ -51,23 +52,25 @@ const useClusterer = <T>(points: T[], options: ClustererOptions<T>) => {
 
   const argsRef = useRef<[number, number, number, number, number]>();
 
+  const [loaded, setLoaded] = useState(false);
+
   useEffect(() => {
+    setLoaded(false);
     const t1 = performance.now();
     markerCluster.load(points);
+    const args = argsRef.current;
+    // markerCluster.loadAsync(points, () => {
     console.log(performance.now() - t1);
 
-    const args = argsRef.current;
+    setLoaded(true);
 
     if (args) {
       setState({
-        getPoints: (...kek: any) => markerCluster.getPoints(...args, ...kek),
-      } as any);
+        getPoints: (...kek) => markerCluster.getPoints(...args, ...kek),
+      });
     }
   }, [points]);
 
-  /**
-   * {@link useClusterer=>handleBoundsChange} throttle delay
-   */
   const handleBoundsChange: GoogleMapsHandlers['onBoundsChanged'] = function (
     bounds
   ) {
@@ -85,11 +88,11 @@ const useClusterer = <T>(points: T[], options: ClustererOptions<T>) => {
     argsRef.current = args as any;
 
     setState({
-      getPoints: (...kek: any) => markerCluster.getPoints(...args, ...kek),
-    } as any);
+      getPoints: (...kek) => markerCluster.getPoints(...args, ...kek),
+    });
   };
 
-  return { handleBoundsChange, getPoints };
+  return { handleBoundsChange, getPoints: loaded ? getPoints : undefined };
 };
 
 export default useClusterer;
