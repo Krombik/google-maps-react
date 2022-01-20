@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import useConst from './useConst';
 import throttle from 'lodash.throttle';
 import { GoogleMapsHandlers } from '../createComponents/createGoogleMap';
-import MarkerCluster, { ClustererOptions } from 'marker-cluster';
+import MarkerCluster, { MarkerClusterOptions } from 'marker-cluster';
 
-export type kek = ReturnType<typeof useClusterer>['handleBoundsChange'];
-
-export type UseClustererOptions<T> = ClustererOptions<T> & {
+export type UseClustererOptions<T> = MarkerClusterOptions<T> & {
   /**
    * {@link useClusterer handleBoundsChange} throttle delay
    */
@@ -19,8 +17,8 @@ export type UseClustererOptions<T> = ClustererOptions<T> & {
 
 type State<T> = {
   getPoints<M, C>(
-    getMarker: (point: T, key: number, lat: number, lng: number) => M,
-    getCluster: (count: number, id: number, lat: number, lng: number) => C,
+    getMarker: (point: T, lng: number, lat: number) => M,
+    getCluster: (lng: number, lat: number, count: number, id: number) => C,
     extend?: number
   ): (M | C)[];
 };
@@ -45,7 +43,7 @@ type State<T> = {
 //   },
 // });
 
-const useClusterer = <T>(points: T[], options: ClustererOptions<T>) => {
+const useClusterer = <T>(points: T[], options: MarkerClusterOptions<T>) => {
   const markerCluster = useConst(() => new MarkerCluster<T>(options));
 
   const [{ getPoints }, setState] = useState<Partial<State<T>>>({});
@@ -57,18 +55,19 @@ const useClusterer = <T>(points: T[], options: ClustererOptions<T>) => {
   useEffect(() => {
     setLoaded(false);
     const t1 = performance.now();
-    markerCluster.load(points);
+    // markerCluster.load(points);
     const args = argsRef.current;
-    // markerCluster.loadAsync(points, () => {
-    console.log(performance.now() - t1);
+    markerCluster.loadAsync(points, () => {
+      console.log(performance.now() - t1);
 
-    setLoaded(true);
+      setLoaded(true);
 
-    if (args) {
-      setState({
-        getPoints: (...kek) => markerCluster.getPoints(...args, ...kek),
-      });
-    }
+      if (args) {
+        setState({
+          getPoints: (...kek) => markerCluster.getPoints(...args, ...kek),
+        });
+      }
+    });
   }, [points]);
 
   const handleBoundsChange: GoogleMapsHandlers['onBoundsChanged'] = function (
@@ -92,7 +91,11 @@ const useClusterer = <T>(points: T[], options: ClustererOptions<T>) => {
     });
   };
 
-  return { handleBoundsChange, getPoints: loaded ? getPoints : undefined };
+  return {
+    handleBoundsChange,
+    getPoints: loaded ? getPoints : undefined,
+    markerCluster,
+  };
 };
 
 export default useClusterer;
