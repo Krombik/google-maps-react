@@ -1,4 +1,4 @@
-import React, { memo, VFC } from 'react';
+import React, { memo, useEffect, useState, VFC } from 'react';
 import {
   GoogleMapLoader,
   useGoogleMapStatus,
@@ -8,6 +8,7 @@ import {
   OverlayView,
   useGoogleMap,
 } from 'google-maps-react';
+import points from './kek.json';
 
 const options = { apiKey: '' };
 
@@ -52,7 +53,7 @@ const locations = [
 
 // console.log(getKek(locations, (v) => v));
 
-const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
+const randomLocations = Array.from({ length: 100000 }, (_, index) => ({
   id: index,
   ...getRandomLocation(),
 }));
@@ -91,18 +92,17 @@ const kek = {
   transform: 'translate(-50%,-50%)',
 };
 
+export const pair = (a: number, b: number) => {
+  const sum = a + b;
+
+  return (sum * (sum + 1)) / 2 + b;
+};
+
 const M = (props: any) => {
   const map = useGoogleMap();
   return (
     <OverlayView {...props} mapPaneLayer='floatPane'>
-      <div
-        onClick={() => {
-          map.setZoom(props.zoom + 1);
-          map.panTo(props);
-          console.log(props.zoom);
-        }}
-        style={kek}
-      >
+      <div onClick={props.onClick} style={kek}>
         {props.count}
       </div>
     </OverlayView>
@@ -120,10 +120,13 @@ const kser = { color: 'red' };
 
 const CGoogleMap = () => {
   const status = useGoogleMapStatus();
-  const { getPoints, handleBoundsChange } = useClusterer(randomLocations, {
-    getLatLng: (v) => [v.lat, v.lng],
-    radius: 60,
-  });
+  const { getPoints, handleBoundsChange, markerCluster } = useClusterer(
+    randomLocations,
+    {
+      getLatLng: (v) => [v.lng, v.lat],
+      radius: 60,
+    }
+  );
   // console.log(getPoints());
   if (status === 1)
     return (
@@ -139,15 +142,28 @@ const CGoogleMap = () => {
         ))} */}
         {getPoints &&
           getPoints(
-            (p, key) => {
+            (_, lng, lat) => {
               return (
-                <OverlayView key={key} lat={p.lat} lng={p.lng}>
-                  <span style={kser}>d</span>
+                <OverlayView key={pair(lat, lng)} lat={lat} lng={lng}>
+                  <span style={kser}>6</span>
                 </OverlayView>
               );
             },
-            (count, key, lat, lng) => {
-              return <M count={count} key={key} lat={lat} lng={lng} />;
+            (lng, lat, count, key) => {
+              return (
+                <M
+                  count={count}
+                  key={key}
+                  lat={lat}
+                  lng={lng}
+                  onClick={() => {
+                    const t1 = performance.now();
+                    console.log(markerCluster.getChildren(key));
+
+                    console.log(performance.now() - t1);
+                  }}
+                />
+              );
             },
             10
           )}
@@ -175,6 +191,9 @@ const Lll = () => {
 
 const Home: VFC = memo(() => {
   // return null;
+  const [points, setPoints] = useState([]);
+
+  useEffect(() => {});
   return (
     <GoogleMapLoader options={options}>
       <CGoogleMap />
