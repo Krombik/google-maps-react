@@ -1,10 +1,8 @@
-import { ReactElement } from 'react';
+import { VFC, ReactElement } from 'react';
 import { GetState, HandlerName, SetLiteral, UnSet } from '../types';
 import createUseStateAndHandlers, {
   UseStateAndHandlers,
 } from './createUseStateAndHandlers';
-
-type Render<P> = (props: P) => ReactElement | null;
 
 const wrapper =
   <
@@ -16,7 +14,7 @@ const wrapper =
   >(
     createRender: <H extends keyof Handlers & HandlerName, S extends StateKeys>(
       useStateAndHandlers: UseStateAndHandlers
-    ) => Render<
+    ) => VFC<
       Props &
         (WithLifecycle extends true
           ? {
