@@ -76,10 +76,12 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
           const listener = instance.addListener(
             handlersMap[handlerName],
             dependBy
-              ? function (this: typeof instance) {
-                  handler.call(this, this.get(dependBy));
+              ? function (this: typeof instance, ...args: any[]) {
+                  handler(this.get(dependBy), ...args, this);
                 }
-              : handler
+              : function (this: typeof instance, ...args: any[]) {
+                  handler(...args, this);
+                }
           );
 
           return () => listener.remove();
@@ -118,26 +120,29 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
     };
   }
 
-  if (handlerNamesList.length === 0) useHandlersEffect = noop;
+  if (handlerNamesList.length === 0) {
+    useHandlersEffect = noop;
+  }
 
   return (instanceRef, props) => {
     const dataRef = useRef<{
-      isTriggeredBySetStateObj: Record<string, boolean>;
+      isTriggeredBySetStateMap: Map<string, true>;
       prevStateArr: unknown[];
     }>({
-      isTriggeredBySetStateObj: {},
+      isTriggeredBySetStateMap: new Map(),
       prevStateArr: [],
     });
 
     useHandlersEffect(instanceRef, props);
 
-    const { isTriggeredBySetStateObj } = dataRef.current;
+    const { isTriggeredBySetStateMap } = dataRef.current;
 
     for (let i = connectedHandlersLength; i--; ) {
       const handlerName = connectedHandlers[i];
 
       const handler = props[handlerName];
 
+      //@ts-expect-error
       useEffect(() => {
         const instance = instanceRef.current;
 
@@ -146,19 +151,17 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
 
           const listener = instance.addListener(
             handlersMap[handlerName],
-            function (this: typeof instance) {
-              if (!isTriggeredBySetStateObj[dependBy]) {
-                handler.call(this, this.get(dependBy));
+            function (this: typeof instance, ...args: any[]) {
+              if (!isTriggeredBySetStateMap.has(dependBy)) {
+                handler(this.get(dependBy), ...args, this);
               } else {
-                isTriggeredBySetStateObj[dependBy] = false;
+                isTriggeredBySetStateMap.delete(dependBy);
               }
             }
           );
 
           return () => listener.remove();
         }
-
-        return;
       }, [handler]);
     }
 
@@ -175,7 +178,7 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
             const state: unknown = props[stateName];
 
             if (isNotEqual(state, prevStateArr[i])) {
-              isTriggeredBySetStateObj[stateName] = true;
+              isTriggeredBySetStateMap.set(stateName, true);
 
               instance.set(stateName, state);
 

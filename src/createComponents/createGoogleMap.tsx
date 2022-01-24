@@ -1,6 +1,7 @@
 import React, {
   CSSProperties,
   PropsWithChildren,
+  ReactNode,
   useEffect,
   useRef,
   useState,
@@ -12,56 +13,57 @@ import noop from '../utils/noop';
 
 export type GoogleMapsHandlers = {
   onBoundsChanged(
-    this: google.maps.Map,
-    bounds: GetValue<google.maps.Map, 'bounds'>
+    bounds: GetValue<google.maps.Map, 'bounds'>,
+    map: google.maps.Map
   ): void;
   onCenterChanged(
-    this: google.maps.Map,
-    center: GetValue<google.maps.Map, 'center'>
+    center: GetValue<google.maps.Map, 'center'>,
+    map: google.maps.Map
   ): void;
   onClick(
-    this: google.maps.Map,
-    e: google.maps.MapMouseEvent | google.maps.IconMouseEvent
+    e: google.maps.MapMouseEvent | google.maps.IconMouseEvent,
+    map: google.maps.Map
   ): void;
-  onContextMenu(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onDoubleClick(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onDrag(this: google.maps.Map): void;
-  onDragEnd(this: google.maps.Map): void;
-  onDragStart(this: google.maps.Map): void;
+  onContextMenu(e: google.maps.MapMouseEvent, map: google.maps.Map): void;
+  onDoubleClick(e: google.maps.MapMouseEvent, map: google.maps.Map): void;
+  onDrag(map: google.maps.Map): void;
+  onDragEnd(map: google.maps.Map): void;
+  onDragStart(map: google.maps.Map): void;
   onHeadingChanged(
-    this: google.maps.Map,
-    heading: GetValue<google.maps.Map, 'heading'>
+    heading: GetValue<google.maps.Map, 'heading'>,
+    map: google.maps.Map
   ): void;
-  onIdle(this: google.maps.Map): void;
+  onIdle(map: google.maps.Map): void;
   onMapTypeIdChanged(
-    this: google.maps.Map,
-    mapTypeId: GetValue<google.maps.Map, 'mapTypeId'>
+    mapTypeId: GetValue<google.maps.Map, 'mapTypeId'>,
+    map: google.maps.Map
   ): void;
-  onMouseMove(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseOut(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseOver(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onMouseMove(e: google.maps.MapMouseEvent, map: google.maps.Map): void;
+  onMouseOut(e: google.maps.MapMouseEvent, map: google.maps.Map): void;
+  onMouseOver(e: google.maps.MapMouseEvent, map: google.maps.Map): void;
   onProjectionChanged(
-    this: google.maps.Map,
-    projection: GetValue<google.maps.Map, 'projection'>
+    projection: GetValue<google.maps.Map, 'projection'>,
+    map: google.maps.Map
   ): void;
-  onResize(this: google.maps.Map): void;
-  onRightClick(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onTilesLoaded(this: google.maps.Map): void;
+  onResize(map: google.maps.Map): void;
+  onRightClick(map: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onTilesLoaded(map: google.maps.Map): void;
   onTiltChanged(
-    this: google.maps.Map,
-    tilt: GetValue<google.maps.Map, 'tilt'>
+    tilt: GetValue<google.maps.Map, 'tilt'>,
+    map: google.maps.Map
   ): void;
   onZoomChanged(
-    this: google.maps.Map,
-    zoom: GetValue<google.maps.Map, 'zoom'>
+    zoom: GetValue<google.maps.Map, 'zoom'>,
+    map: google.maps.Map
   ): void;
 };
 
-type Props = PropsWithChildren<{
+type Props = {
   className?: string;
   style?: CSSProperties;
   defaultOptions?: Readonly<google.maps.MapOptions>;
-}>;
+  children?: ReactNode | ((map: google.maps.Map) => JSX.Element);
+};
 
 const createGoogleMapComponent = wrapper<
   google.maps.Map,
@@ -115,7 +117,9 @@ const createGoogleMapComponent = wrapper<
       return (
         <div ref={mapElRef} className={className} style={style}>
           {children && map && (
-            <MapContext.Provider value={map}>{children}</MapContext.Provider>
+            <MapContext.Provider value={map}>
+              {typeof children === 'function' ? children(map) : children}
+            </MapContext.Provider>
           )}
         </div>
       );

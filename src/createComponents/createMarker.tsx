@@ -6,56 +6,56 @@ import noop from '../utils/noop';
 
 export type MarkerHandlers = {
   onAnimationChanged(
-    this: google.maps.Marker,
-    animation: GetValue<google.maps.Marker, 'animation'>
+    animation: GetValue<google.maps.Marker, 'animation'>,
+    marker: google.maps.Marker
   ): void;
-  onClick(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onClick(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
   onClickableChanged(
-    this: google.maps.Marker,
-    clickable: GetValue<google.maps.Marker, 'clickable'>
+    clickable: GetValue<google.maps.Marker, 'clickable'>,
+    marker: google.maps.Marker
   ): void;
-  onContextMenu(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onContextMenu(e: google.maps.MapMouseEvent): void;
   onCursorChanged(
-    this: google.maps.Marker,
-    cursor: GetValue<google.maps.Marker, 'cursor'>
+    cursor: GetValue<google.maps.Marker, 'cursor'>,
+    marker: google.maps.Marker
   ): void;
-  onDoubleClick(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDrag(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDragEnd(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onDoubleClick(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
+  onDrag(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
+  onDragEnd(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
   onDraggableChanged(
-    this: google.maps.Marker,
-    draggable: GetValue<google.maps.Marker, 'draggable'>
+    draggable: GetValue<google.maps.Marker, 'draggable'>,
+    marker: google.maps.Marker
   ): void;
-  onDragStart(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onFlatChanged(this: google.maps.Marker): void;
+  onDragStart(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
+  onFlatChanged(marker: google.maps.Marker): void;
   onIconChanged(
-    this: google.maps.Marker,
-    icon: GetValue<google.maps.Marker, 'icon'>
+    icon: GetValue<google.maps.Marker, 'icon'>,
+    marker: google.maps.Marker
   ): void;
-  onMouseDown(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseOut(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseOver(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseUp(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onMouseDown(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
+  onMouseOut(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
+  onMouseOver(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
+  onMouseUp(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
   onPositionChanged(
-    this: google.maps.Marker,
-    position: GetValue<google.maps.Marker, 'position'>
+    position: GetValue<google.maps.Marker, 'position'>,
+    marker: google.maps.Marker
   ): void;
-  onRightClick(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onRightClick(e: google.maps.MapMouseEvent, marker: google.maps.Marker): void;
   onShapeChanged(
-    this: google.maps.Marker,
-    shape: GetValue<google.maps.Marker, 'shape'>
+    shape: GetValue<google.maps.Marker, 'shape'>,
+    marker: google.maps.Marker
   ): void;
   onTitleChanged(
-    this: google.maps.Marker,
-    title: GetValue<google.maps.Marker, 'title'>
+    title: GetValue<google.maps.Marker, 'title'>,
+    marker: google.maps.Marker
   ): void;
   onVisibleChanged(
-    this: google.maps.Marker,
-    visible: GetValue<google.maps.Marker, 'visible'>
+    visible: GetValue<google.maps.Marker, 'visible'>,
+    marker: google.maps.Marker
   ): void;
   onZIndexChanged(
-    this: google.maps.Marker,
-    zIndex: GetValue<google.maps.Marker, 'zIndex'>
+    zIndex: GetValue<google.maps.Marker, 'zIndex'>,
+    marker: google.maps.Marker
   ): void;
 };
 
