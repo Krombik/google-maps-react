@@ -10,7 +10,7 @@ import {
 } from 'google-maps-react';
 import points from './kek.json';
 
-const options = { apiKey: '' };
+const options = { apiKey: '', language: 'ru' };
 
 const GoogleMap = createGoogleMapComponent(['onBoundsChanged'], []);
 
@@ -20,9 +20,15 @@ const style = { height: '100vh', width: '100vw' };
 
 const c = { lat: 0, lng: 0 };
 
+const round = (a: number, b: number) => {
+  const c = 10 ** b;
+
+  return Math.round(a * c) / c;
+};
+
 const getRandomLocation = () => ({
-  lat: Math.random() * (85 * 2) - 85,
-  lng: Math.random() * (180 * 2) - 180,
+  lat: round((Math.random() * (85 * 2) - 85) / 150, 6),
+  lng: round((Math.random() * (180 * 2) - 180) / 150, 6),
 });
 
 const locations = [
@@ -53,10 +59,15 @@ const locations = [
 
 // console.log(getKek(locations, (v) => v));
 
-const randomLocations = Array.from({ length: 100000 }, (_, index) => ({
+const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
   id: index,
   ...getRandomLocation(),
 }));
+
+randomLocations.push(
+  { lat: -42.735258, lng: 147.438, id: randomLocations.length },
+  { lat: -42.735258, lng: 147.438, id: randomLocations.length + 1 }
+);
 
 const c1 = 10000;
 
@@ -109,21 +120,25 @@ const M = (props: any) => {
   );
 };
 
-const pkek = [
-  { lat: -33.718234, lng: 150.363187, id: 1 },
+const pkek: any[] = [
+  // { lat: -33.718234, lng: 150.363187, id: 1 },
   // { lat: -33.718234, lng: 150.363115, id: 4 },
-  { lat: -33.718234, lng: 120.363183, id: 3 },
-  { lat: -33.718234, lng: 150.363181, id: 2 },
+  // { lat: -33.718234, lng: 120.363183, id: 3 },
+  // { lat: -33.718234, lng: 150.363181, id: 2 },
 ];
 
 const kser = { color: 'red' };
 
-const CGoogleMap = () => {
+const CGoogleMap = ({
+  points,
+}: {
+  points: { lat: number; lng: number; id: number }[];
+}) => {
   const status = useGoogleMapStatus();
   const { getPoints, handleBoundsChange, markerCluster } = useClusterer(
-    randomLocations,
+    points,
     {
-      getLatLng: (v) => [v.lng, v.lat],
+      getLngLat: (v) => [v.lng, v.lat],
       radius: 60,
     }
   );
@@ -140,7 +155,8 @@ const CGoogleMap = () => {
             d
           </OverlayView>
         ))} */}
-        {getPoints &&
+        {(map) =>
+          getPoints &&
           getPoints(
             (_, lng, lat) => {
               return (
@@ -157,16 +173,16 @@ const CGoogleMap = () => {
                   lat={lat}
                   lng={lng}
                   onClick={() => {
-                    const t1 = performance.now();
                     console.log(markerCluster.getChildren(key));
-
-                    console.log(performance.now() - t1);
+                    map.panTo({ lat, lng });
+                    map.setZoom(markerCluster.getZoom(key));
                   }}
                 />
               );
             },
             10
-          )}
+          )
+        }
         {/* <MarkerClusterer>
           {(markerClusterer) =>
             randomLocations.map((position) => (
@@ -191,12 +207,19 @@ const Lll = () => {
 
 const Home: VFC = memo(() => {
   // return null;
-  const [points, setPoints] = useState([]);
+  const [points, setPoints] = useState<typeof randomLocations>(pkek);
 
   useEffect(() => {});
   return (
     <GoogleMapLoader options={options}>
-      <CGoogleMap />
+      <CGoogleMap points={points} />
+      <button
+        onClick={() => {
+          setPoints(randomLocations);
+        }}
+      >
+        keke
+      </button>
       <Lll />
     </GoogleMapLoader>
   );

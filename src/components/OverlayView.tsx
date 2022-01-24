@@ -133,9 +133,7 @@ const OverlayView: FC<OverlayViewProps> = ({
 
     overlay.setMap(map);
 
-    return () => {
-      overlay.setMap(null);
-    };
+    return () => overlay.setMap(null);
   }, []);
 
   useEffect(() => {

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import useConst from './useConst';
-import throttle from 'lodash.throttle';
 import { GoogleMapsHandlers } from '../createComponents/createGoogleMap';
 import MarkerCluster, { MarkerClusterOptions } from 'marker-cluster';
 
@@ -23,26 +22,6 @@ type State<T> = {
   ): (M | C)[];
 };
 
-// const createState = <T>(
-//   points: ReturnType<Clusterer<T>['getClusters']>
-// ): State<T> => ({
-//   getPoints(getMarker, getCluster) {
-//     const clusters = [];
-
-//     for (let i = points.length; i--; ) {
-//       const p = points[i];
-
-//       const children = p.items;
-
-//       clusters.push(
-//         children ? getCluster(p, p.coords, p.count, children) : getMarker(p)
-//       );
-//     }
-
-//     return clusters;
-//   },
-// });
-
 const useClusterer = <T>(points: T[], options: MarkerClusterOptions<T>) => {
   const markerCluster = useConst(() => new MarkerCluster<T>(options));
 
@@ -57,7 +36,7 @@ const useClusterer = <T>(points: T[], options: MarkerClusterOptions<T>) => {
     const t1 = performance.now();
     // markerCluster.load(points);
     const args = argsRef.current;
-    markerCluster.loadAsync(points, () => {
+    markerCluster.loadAsync(points).then(() => {
       console.log(performance.now() - t1);
 
       setLoaded(true);
@@ -70,14 +49,15 @@ const useClusterer = <T>(points: T[], options: MarkerClusterOptions<T>) => {
     });
   }, [points]);
 
-  const handleBoundsChange: GoogleMapsHandlers['onBoundsChanged'] = function (
-    bounds
-  ) {
+  const handleBoundsChange: GoogleMapsHandlers['onBoundsChanged'] = (
+    bounds,
+    map
+  ) => {
     const sw = bounds.getSouthWest();
     const ne = bounds.getNorthEast();
 
     const args = [
-      this.getZoom()!,
+      map.getZoom()!,
       sw.lng(),
       sw.lat(),
       ne.lng(),
@@ -93,7 +73,7 @@ const useClusterer = <T>(points: T[], options: MarkerClusterOptions<T>) => {
 
   return {
     handleBoundsChange,
-    getPoints: loaded ? getPoints : undefined,
+    getPoints: loaded && getPoints,
     markerCluster,
   };
 };
