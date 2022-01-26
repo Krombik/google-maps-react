@@ -1,6 +1,5 @@
 import React, {
   CSSProperties,
-  PropsWithChildren,
   ReactNode,
   useEffect,
   useRef,
@@ -62,7 +61,7 @@ type Props = {
   className?: string;
   style?: CSSProperties;
   defaultOptions?: Readonly<google.maps.MapOptions>;
-  children?: ReactNode | ((map: google.maps.Map) => JSX.Element);
+  children?: ReactNode | ((map: google.maps.Map) => ReactNode);
 };
 
 const createGoogleMapComponent = wrapper<

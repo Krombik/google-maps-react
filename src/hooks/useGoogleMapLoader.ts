@@ -1,42 +1,37 @@
-import { Loader, LoaderOptions } from '@googlemaps/js-api-loader';
+import Loader, { LoaderOptions, LoaderStatus } from 'google-maps-js-api-loader';
 import { useState, useEffect } from 'react';
-import { GoogleMapLoaderStatus } from '../enums';
-import useConst from './useConst';
+import noop from '../utils/noop';
 
 export type GoogleMapLoaderCallbacks = {
-  onLoad?: () => void;
-  onError?: (e: ErrorEvent) => void;
+  onLoaded: () => void;
+  onError: (e: ErrorEvent) => void;
 };
 
 const useGoogleMapLoader = (
-  options: LoaderOptions,
-  callbacks?: GoogleMapLoaderCallbacks
+  options?: LoaderOptions,
+  callbacks: Partial<GoogleMapLoaderCallbacks> = {}
 ) => {
-  const loader = useConst(() => new Loader(options));
-
-  const [status, setStatus] = useState<GoogleMapLoaderStatus>(() =>
-    (loader as any).failed
-      ? GoogleMapLoaderStatus.ERROR
-      : (loader as any).done
-      ? GoogleMapLoaderStatus.LOADED
-      : GoogleMapLoaderStatus.LOADING
-  );
+  const [status, setStatus] = useState(Loader.status);
 
   useEffect(() => {
-    if (status === GoogleMapLoaderStatus.LOADING) {
-      loader.loadCallback((e) => {
-        if (e) {
-          setStatus(GoogleMapLoaderStatus.ERROR);
-          callbacks?.onError?.(e);
-        } else {
-          setStatus(GoogleMapLoaderStatus.LOADED);
-          callbacks?.onLoad?.();
-        }
-      });
+    if (status !== LoaderStatus.LOADED) {
+      (options ? Loader.load(options) : Loader.completion)
+        .then(() => {
+          setStatus(LoaderStatus.LOADED);
+
+          (callbacks.onLoaded || noop)();
+        })
+        .catch((err) => {
+          setStatus(LoaderStatus.ERROR);
+
+          (callbacks.onError || noop)(err);
+        });
     }
   }, []);
 
   return status;
 };
+
+export { Loader, LoaderOptions, LoaderStatus };
 
 export default useGoogleMapLoader;

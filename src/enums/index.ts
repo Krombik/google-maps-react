@@ -38,9 +38,3 @@ export enum GoogleMapEvents {
   VISIBLE_CHANGED = 'visible_changed',
   Z_INDEX_CHANGED = 'zindex_changed',
 }
-
-export enum GoogleMapLoaderStatus {
-  ERROR,
-  LOADED,
-  LOADING,
-}
