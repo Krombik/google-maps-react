@@ -59,11 +59,14 @@ export type MarkerHandlers = {
   ): void;
 };
 
-export type MarkerProps = {
+export type MarkerBaseProps = {
   defaultOptions?: Readonly<google.maps.MarkerOptions>;
 };
 
-export type MarkerStateName =
+const createMarkerComponent = wrapper<
+  google.maps.Marker,
+  MarkerBaseProps,
+  MarkerHandlers,
   | 'animation'
   | 'clickable'
   | 'cursor'
@@ -75,13 +78,7 @@ export type MarkerStateName =
   | 'shape'
   | 'title'
   | 'visible'
-  | 'zIndex';
-
-const createMarkerComponent = wrapper<
-  google.maps.Marker,
-  MarkerProps,
-  MarkerHandlers,
-  MarkerStateName
+  | 'zIndex'
 >(
   (useStateAndHandlers) =>
     ({ defaultOptions, onMount, onUnmount, ...props }) => {
