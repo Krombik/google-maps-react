@@ -57,7 +57,7 @@ export type GoogleMapsHandlers = {
   ): void;
 };
 
-type Props = {
+export type GoogleMapsBaseProps = {
   className?: string;
   style?: CSSProperties;
   defaultOptions?: Readonly<google.maps.MapOptions>;
@@ -66,7 +66,7 @@ type Props = {
 
 const createGoogleMapComponent = wrapper<
   google.maps.Map,
-  Props,
+  GoogleMapsBaseProps,
   GoogleMapsHandlers,
   | 'center'
   | 'clickableIcons'
