@@ -93,7 +93,7 @@ const _ = {
 declare class _OverlayView extends _.OverlayView {}
 
 export type OverlayViewProps = {
-  readonly mapPaneLayer?: keyof google.maps.MapPanes;
+  mapPaneLayer?: keyof google.maps.MapPanes;
   onAdd?: () => void;
   onDraw?: (x: number, y: number) => void;
   onRemove?: () => void;

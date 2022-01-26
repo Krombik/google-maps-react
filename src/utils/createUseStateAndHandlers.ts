@@ -1,7 +1,7 @@
+import equal from 'fast-deep-equal';
 import { MutableRefObject, useEffect, useRef } from 'react';
 import { HandlerName } from '../types';
 import { handlersMap } from './constants';
-import isNotEqual from './isNotEqual';
 import noop from './noop';
 
 export type UseStateAndHandlers<
@@ -42,7 +42,7 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
 
             const state: unknown = props[stateName];
 
-            if (isNotEqual(state, prevStateArr[i])) {
+            if (!equal(state, prevStateArr[i])) {
               instance.set(stateName, state);
 
               prevStateArr[i] = state;
@@ -177,7 +177,7 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
 
             const state: unknown = props[stateName];
 
-            if (isNotEqual(state, prevStateArr[i])) {
+            if (!equal(state, prevStateArr[i])) {
               isTriggeredBySetStateMap.set(stateName, true);
 
               instance.set(stateName, state);

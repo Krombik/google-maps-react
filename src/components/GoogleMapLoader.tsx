@@ -1,17 +1,14 @@
-import { LoaderOptions } from '@googlemaps/js-api-loader';
 import React, { FC, createContext, useContext } from 'react';
-import { GoogleMapLoaderStatus } from '../enums';
 import useGoogleMapLoader, {
   GoogleMapLoaderCallbacks,
 } from '../hooks/useGoogleMapLoader';
+import Loader, { LoaderOptions, LoaderStatus } from 'google-maps-js-api-loader';
 
 export type GoogleMapLoaderProps = {
   options: LoaderOptions;
-} & GoogleMapLoaderCallbacks;
+} & Partial<GoogleMapLoaderCallbacks>;
 
-const LoaderContext = createContext<GoogleMapLoaderStatus>(
-  GoogleMapLoaderStatus.LOADING
-);
+const LoaderContext = createContext<LoaderStatus>(Loader.status);
 
 export const useGoogleMapStatus = () => useContext(LoaderContext);
 

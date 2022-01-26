@@ -9,20 +9,15 @@ const wrapper =
     Instance extends Record<SetLiteral<string>, (value: any) => void> | {},
     Props extends Record<string, unknown>,
     Handlers extends Partial<Record<HandlerName, (...args: any[]) => void>>,
-    StateKeys extends UnSet<keyof Instance>,
-    WithLifecycle extends boolean = true
+    StateKeys extends UnSet<keyof Instance>
   >(
     createRender: <H extends keyof Handlers & HandlerName, S extends StateKeys>(
       useStateAndHandlers: UseStateAndHandlers
     ) => VFC<
-      Props &
-        (WithLifecycle extends true
-          ? {
-              onMount?(instance: Instance): void;
-              onUnmount?(): void;
-            }
-          : {}) &
-        Partial<Pick<Handlers, H>> &
+      Props & {
+        onMount?(instance: Instance): void;
+        onUnmount?(): void;
+      } & Partial<Pick<Handlers, H>> &
         Pick<GetState<Instance, StateKeys>, S>
     >,
     connectedHandlersAndState: Partial<

@@ -4,13 +4,17 @@ import {
   useGoogleMapStatus,
   createGoogleMapComponent,
   createMarkerComponent,
-  useClusterer,
+  useMarkerCluster,
   OverlayView,
   useGoogleMap,
+  LoaderStatus,
 } from 'google-maps-react';
 import points from './kek.json';
 
-const options = { apiKey: '', language: 'ru' };
+const options = {
+  apiKey: '',
+  libraries: ['places', 'geometry'],
+} as any;
 
 const GoogleMap = createGoogleMapComponent(['onBoundsChanged'], []);
 
@@ -27,8 +31,8 @@ const round = (a: number, b: number) => {
 };
 
 const getRandomLocation = () => ({
-  lat: round((Math.random() * (85 * 2) - 85) / 150, 6),
-  lng: round((Math.random() * (180 * 2) - 180) / 150, 6),
+  lat: round(Math.random() * (85 * 2) - 85, 6),
+  lng: round(Math.random() * (180 * 2) - 180, 6),
 });
 
 const locations = [
@@ -59,7 +63,7 @@ const locations = [
 
 // console.log(getKek(locations, (v) => v));
 
-const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
+const randomLocations = Array.from({ length: 1000000 }, (_, index) => ({
   id: index,
   ...getRandomLocation(),
 }));
@@ -135,15 +139,16 @@ const CGoogleMap = ({
   points: { lat: number; lng: number; id: number }[];
 }) => {
   const status = useGoogleMapStatus();
-  const { getPoints, handleBoundsChange, markerCluster } = useClusterer(
+  const { getPoints, handleBoundsChange, markerCluster } = useMarkerCluster(
     points,
     {
       getLngLat: (v) => [v.lng, v.lat],
-      radius: 60,
+      radius: 75,
+      asyncMode: true,
     }
   );
   // console.log(getPoints());
-  if (status === 1)
+  if (status === LoaderStatus.LOADED)
     return (
       <GoogleMap
         style={style}
@@ -219,6 +224,13 @@ const Home: VFC = memo(() => {
         }}
       >
         keke
+      </button>
+      <button
+        onClick={() => {
+          setPoints(pkek);
+        }}
+      >
+        bee
       </button>
       <Lll />
     </GoogleMapLoader>
