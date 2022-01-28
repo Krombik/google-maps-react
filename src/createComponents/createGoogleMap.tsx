@@ -45,7 +45,7 @@ export type GoogleMapsHandlers = {
     map: google.maps.Map
   ): void;
   onResize(map: google.maps.Map): void;
-  onRightClick(map: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onRightClick(e: google.maps.MapMouseEvent, map: google.maps.Map): void;
   onTilesLoaded(map: google.maps.Map): void;
   onTiltChanged(
     tilt: GetValue<google.maps.Map, 'tilt'>,

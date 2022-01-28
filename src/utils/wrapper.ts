@@ -1,4 +1,4 @@
-import { VFC, ReactElement } from 'react';
+import { VFC } from 'react';
 import { GetState, HandlerName, SetLiteral, UnSet } from '../types';
 import createUseStateAndHandlers, {
   UseStateAndHandlers,

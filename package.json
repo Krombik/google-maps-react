@@ -1,7 +1,7 @@
 {
-  "name": "google-maps-react",
+  "name": "google-maps-js-api-react",
   "version": "1.0.0",
-  "description": "Made with create-react-library",
+  "description": "Library for convenient work of Google Maps JavaScript API with React",
   "author": "Krombik",
   "license": "MIT",
   "repository": "Krombik/google-maps-react",
@@ -52,10 +52,21 @@
     "typescript": "^4.5.5"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "resolutions": {
     "**/typescript": "^4.5.5"
-  }
+  },
+  "keywords": [
+    "react",
+    "google",
+    "maps",
+    "loader",
+    "clustering",
+    "Marker",
+    "Map",
+    "OverlayView",
+    "AutocompleteService",
+    "autocomplete"
+  ]
 }
