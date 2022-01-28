@@ -307,7 +307,7 @@ const useAutocompleteService: () =>
   | undefined;
 ```
 
-returns `undefined` if google.maps is not loaded yet, throws error if loading is not started or if `places` not included to loader options
+returns `undefined` if google.maps is not loaded yet, throws error if loading is not started or if `places` not included to libraries in loader options
 
 ---
 

@@ -10,7 +10,7 @@ const handleAutocompleteService = () => {
 
 /**
  * @returns `undefined` if google.maps is loading
- * @throws error if load of google maps is not started yet or if `places` not included to loader options
+ * @throws error if load of google maps is not started yet or if `places` not included to libraries in loader options
  */
 const useAutocompleteService = () => {
   const [autocompleteService, setAutocompleteService] = useState(() =>
