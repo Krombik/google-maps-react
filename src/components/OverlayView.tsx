@@ -93,6 +93,10 @@ const _ = {
 declare class _OverlayView extends _.OverlayView {}
 
 export type OverlayViewProps = {
+  /**
+   * for details see this [link](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes)
+   * @default 'overlayLayer'
+   */
   mapPaneLayer?: keyof google.maps.MapPanes;
   onAdd?: () => void;
   onDraw?: (x: number, y: number) => void;

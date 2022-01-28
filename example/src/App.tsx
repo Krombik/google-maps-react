@@ -1,28 +1,22 @@
-import React, { memo, useEffect, useState, VFC } from 'react';
+import { VFC } from 'react';
 import {
   GoogleMapLoader,
   useGoogleMapStatus,
   createGoogleMapComponent,
-  createMarkerComponent,
   useMarkerCluster,
   OverlayView,
-  useGoogleMap,
   LoaderStatus,
 } from 'google-maps-react';
-import points from './kek.json';
+import { LoaderOptions } from 'google-maps-js-api-loader';
 
-const options = {
+const options: LoaderOptions = {
   apiKey: '',
   libraries: ['places', 'geometry'],
-} as any;
+};
 
 const GoogleMap = createGoogleMapComponent(['onBoundsChanged'], []);
 
-const Marker = createMarkerComponent(['onClick'], ['position']);
-
 const style = { height: '100vh', width: '100vw' };
-
-const c = { lat: 0, lng: 0 };
 
 const round = (a: number, b: number) => {
   const c = 10 ** b;
@@ -61,9 +55,7 @@ const locations = [
   { lat: -43.999792, lng: 170.463352 },
 ];
 
-// console.log(getKek(locations, (v) => v));
-
-const randomLocations = Array.from({ length: 1000000 }, (_, index) => ({
+const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
   id: index,
   ...getRandomLocation(),
 }));
@@ -72,32 +64,6 @@ randomLocations.push(
   { lat: -42.735258, lng: 147.438, id: randomLocations.length },
   { lat: -42.735258, lng: 147.438, id: randomLocations.length + 1 }
 );
-
-const c1 = 10000;
-
-(window as any).kek1 = () => {
-  const t1 = performance.now();
-  // for (let i = 0; i < c1; i++) {
-
-  // }
-
-  // const a2 = new Float64Array([...(a1 as any)]);
-  // a2.sort();
-  // console.log(performance.now() - t1);
-};
-
-// console.log(fn());
-
-(window as any).kek2 = () => {
-  const t1 = performance.now();
-  // for (let i = 0; i < c1; i++) {
-  //   const a64 = new Float64Array(10000);
-  //   for (let i = 0; i < a64.length; i++) {
-  //     a64[i] = Math.random();
-  //   }
-  // }
-  console.log(performance.now() - t1);
-};
 
 const kek = {
   padding: '5px',
@@ -114,7 +80,6 @@ export const pair = (a: number, b: number) => {
 };
 
 const M = (props: any) => {
-  const map = useGoogleMap();
   return (
     <OverlayView {...props} mapPaneLayer='floatPane'>
       <div onClick={props.onClick} style={kek}>
@@ -124,30 +89,22 @@ const M = (props: any) => {
   );
 };
 
-const pkek: any[] = [
-  // { lat: -33.718234, lng: 150.363187, id: 1 },
-  // { lat: -33.718234, lng: 150.363115, id: 4 },
-  // { lat: -33.718234, lng: 120.363183, id: 3 },
-  // { lat: -33.718234, lng: 150.363181, id: 2 },
-];
-
-const kser = { color: 'red' };
-
 const CGoogleMap = ({
   points,
 }: {
   points: { lat: number; lng: number; id: number }[];
 }) => {
   const status = useGoogleMapStatus();
+
   const { getPoints, handleBoundsChange, markerCluster } = useMarkerCluster(
     points,
+    (v) => [v.lng, v.lat],
     {
-      getLngLat: (v) => [v.lng, v.lat],
       radius: 75,
       asyncMode: true,
     }
   );
-  // console.log(getPoints());
+
   if (status === LoaderStatus.LOADED)
     return (
       <GoogleMap
@@ -155,32 +112,27 @@ const CGoogleMap = ({
         defaultOptions={{ center: locations[0], zoom: 5 }}
         onBoundsChanged={handleBoundsChange}
       >
-        {/* {d.map(({ coords }, index) => (
-          <OverlayView {...coords} key={index}>
-            d
-          </OverlayView>
-        ))} */}
         {(map) =>
           getPoints &&
           getPoints(
             (_, lng, lat) => {
               return (
                 <OverlayView key={pair(lat, lng)} lat={lat} lng={lng}>
-                  <span style={kser}>6</span>
+                  <span>dot</span>
                 </OverlayView>
               );
             },
-            (lng, lat, count, key) => {
+            (lng, lat, count, id) => {
               return (
                 <M
                   count={count}
-                  key={key}
+                  key={id}
                   lat={lat}
                   lng={lng}
                   onClick={() => {
-                    console.log(markerCluster.getChildren(key));
+                    console.log(markerCluster.getChildren(id));
                     map.panTo({ lat, lng });
-                    map.setZoom(markerCluster.getZoom(key));
+                    map.setZoom(markerCluster.getZoom(id));
                   }}
                 />
               );
@@ -188,53 +140,18 @@ const CGoogleMap = ({
             10
           )
         }
-        {/* <MarkerClusterer>
-          {(markerClusterer) =>
-            randomLocations.map((position) => (
-              <Kek
-                markerClusterer={markerClusterer}
-                position={position}
-                key={position.id}
-              />
-            ))
-          }
-        </MarkerClusterer> */}
       </GoogleMap>
     );
 
   return null;
 };
 
-const Lll = () => {
-  console.log(433563);
-  return null;
-};
-
-const Home: VFC = memo(() => {
-  // return null;
-  const [points, setPoints] = useState<typeof randomLocations>(pkek);
-
-  useEffect(() => {});
+const Home: VFC = () => {
   return (
     <GoogleMapLoader options={options}>
-      <CGoogleMap points={points} />
-      <button
-        onClick={() => {
-          setPoints(randomLocations);
-        }}
-      >
-        keke
-      </button>
-      <button
-        onClick={() => {
-          setPoints(pkek);
-        }}
-      >
-        bee
-      </button>
-      <Lll />
+      <CGoogleMap points={randomLocations} />
     </GoogleMapLoader>
   );
-});
+};
 
 export default Home;

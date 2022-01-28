@@ -1,18 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import useConst from './useConst';
 import { GoogleMapsHandlers } from '../createComponents/createGoogleMap';
-import MarkerCluster, { MarkerClusterOptions } from 'marker-cluster';
+import MarkerCluster, {
+  ClusterMapper,
+  MarkerClusterOptions,
+  MarkerMapper,
+} from 'marker-cluster';
 
 type State<T> = [
   getPoints: <M, C>(
-    getMarker: (point: T, lng: number, lat: number) => M,
-    getCluster: (lng: number, lat: number, count: number, id: number) => C,
+    markerMapper: MarkerMapper<T, M>,
+    clusterMapper: ClusterMapper<C>,
+    /** @see [extend](https://github.com/Krombik/marker-cluster#getpoints)  */
     extend?: number
   ) => (M | C)[]
 ];
 
-export type UseMarkerClusterOptions<T> = MarkerClusterOptions & {
-  getLngLat: (point: T) => [lng: number, lat: number];
+export type UseMarkerClusterOptions = MarkerClusterOptions & {
   asyncMode?: boolean;
 };
 
@@ -20,7 +24,8 @@ type Args = [number, number, number, number, number];
 
 const useMarkerCluster = <T>(
   points: T[],
-  { getLngLat, asyncMode, ...options }: UseMarkerClusterOptions<T>
+  getLngLat: (point: T) => [lng: number, lat: number],
+  options: UseMarkerClusterOptions
 ) => {
   const markerCluster = useConst(() => new MarkerCluster(getLngLat, options));
 
@@ -40,7 +45,7 @@ const useMarkerCluster = <T>(
       }
     };
 
-    if (asyncMode) {
+    if (options.asyncMode) {
       markerCluster.loadAsync(points).then(updateState);
 
       return () => {
