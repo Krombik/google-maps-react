@@ -33,7 +33,7 @@ const useMarkerCluster = <T>(
 
   const argsRef = useRef<Args>();
 
-  useEffect(() => () => markerCluster.worker?.terminate(), []);
+  useEffect(() => () => markerCluster.cleanUp(), []);
 
   //@ts-expect-error
   useEffect(() => {

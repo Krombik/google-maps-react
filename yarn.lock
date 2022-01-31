@@ -2940,10 +2940,10 @@ make-dir@^3.0.2:
   dependencies:
     semver "^6.0.0"
 
-marker-cluster@^1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/marker-cluster/-/marker-cluster-1.1.2.tgz#ef772726b099b9369386119bedc48636fd7258a0"
-  integrity sha512-USTDhY7UQgg3wjrdYTcDLw50Al45H4KoXpQxE6s0yg9FMVBJZHca6lFpB3FZh3BwRRGLTkk/krSfqf+YaGrdEA==
+marker-cluster@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/marker-cluster/-/marker-cluster-1.2.0.tgz#f9a86a7c05fcd1893fd94079690311175d5506f2"
+  integrity sha512-VCy5aDz2cpwjVsbS3VQfl1MWR/lujeFZGERSslmpXLr4u7x0a1HSRPh9kgE6qVZbQbqavO044f6YN9YYej+R2w==
 
 maxmin@^2.1.0:
   version "2.1.0"
