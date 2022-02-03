@@ -1,6 +1,6 @@
 {
   "name": "google-maps-js-api-react",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Library for convenient work of Google Maps JavaScript API with React",
   "author": "Krombik",
   "license": "MIT",
@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "microbundle --jsx React.createElement",
-    "start": "microbundle --jsx React.createElement watch --no-compress",
+    "start": "microbundle --jsx React.createElement watch",
     "prepare": "run-s build",
     "predeploy": "cd example && yarn install && yarn run build",
     "deploy": "gh-pages -d example/build"
