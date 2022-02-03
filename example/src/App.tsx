@@ -1,4 +1,4 @@
-import { VFC } from 'react';
+import { useEffect, useRef, VFC } from 'react';
 import {
   GoogleMapLoader,
   useGoogleMapStatus,
@@ -79,12 +79,14 @@ export const pair = (a: number, b: number) => {
   return (sum * (sum + 1)) / 2 + b;
 };
 
-const M = (props: any) => {
+const Kek: VFC<{ lat: number; lng: number }> = ({ lat, lng }) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // useEffect(() => console.log(ref.current), []);
+
   return (
-    <OverlayView {...props} mapPaneLayer='floatPane'>
-      <div onClick={props.onClick} style={kek}>
-        {props.count}
-      </div>
+    <OverlayView ref={ref} lat={lat} lng={lng}>
+      <span>dot</span>
     </OverlayView>
   );
 };
@@ -116,25 +118,23 @@ const CGoogleMap = ({
           getPoints &&
           getPoints(
             (_, lng, lat) => {
-              return (
-                <OverlayView key={pair(lat, lng)} lat={lat} lng={lng}>
-                  <span>dot</span>
-                </OverlayView>
-              );
+              return <Kek key={pair(lat, lng)} lat={lat} lng={lng} />;
             },
             (lng, lat, count, id) => {
               return (
-                <M
-                  count={count}
+                <OverlayView
                   key={id}
                   lat={lat}
                   lng={lng}
+                  style={kek}
                   onClick={() => {
                     console.log(markerCluster.getChildren(id));
                     map.panTo({ lat, lng });
                     map.setZoom(markerCluster.getZoom(id));
                   }}
-                />
+                >
+                  {count}
+                </OverlayView>
               );
             },
             10
