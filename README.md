@@ -285,17 +285,44 @@ creates Marker component, for details see [example](#example)
 ### OverlayView
 
 ```ts
+type C = FC | ComponentClass | keyof JSX.IntrinsicElements;
+
 const OverlayView: FC<{
-  mapPaneLayer?: keyof google.maps.MapPanes = 'overlayLayer';
+  mapPaneLayer?: keyof google.maps.MapPanes = 'overlayMouseTarget';
+  component?: C;
   onAdd?: () => void;
   onDraw?: (x: number, y: number) => void;
   onRemove?: () => void;
   lat: number;
   lng: number;
-}>;
+}> &
+  ComponentPropsWithRef<C>;
 ```
 
 [OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view) implementation
+
+| Name            | Description                                                                                        | Default              |
+| :-------------- | :------------------------------------------------------------------------------------------------- | :------------------- |
+| `mapPaneLayer?` | [see](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes) | 'overlayMouseTarget' |
+| `component?`    | same to [material-ui component props](https://mui.com/guides/composition/#component-prop)          | 'div'                |
+
+> Note: if you pass functional component to `component` prop, you should wrap it in forwardRef like in example below
+
+```jsx
+const SomeComponent = forwardRef(({ children }, ref) => (
+  <div ref={ref}>{children}</div>
+));
+
+const AnotherComponent = () => {
+  const ref = useRef(null); // you can pass your own ref to OverlayView if you need it
+
+  return (
+    <OverlayView component={SomeComponent} lat={0} lng={0} ref={ref}>
+      hi
+    </OverlayView>
+  );
+};
+```
 
 ---
 
