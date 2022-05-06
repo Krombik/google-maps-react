@@ -1,17 +1,10 @@
-import { MutableRefObject, Ref, useCallback } from 'react';
+import { Ref, RefCallback, useCallback } from 'react';
+import setRef from '../utils/setRef';
 
 const useMergedRef = <T>(...refs: Ref<T>[]) =>
-  useCallback((el: T) => {
+  useCallback<RefCallback<T>>((instance) => {
     for (let i = refs.length; i--; ) {
-      const ref = refs[i];
-
-      if (ref) {
-        if (typeof ref === 'object') {
-          (ref as MutableRefObject<T>).current = el;
-        } else if (typeof ref === 'function') {
-          ref(el);
-        }
-      }
+      setRef(refs[i], instance);
     }
   }, refs);
 

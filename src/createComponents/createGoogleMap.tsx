@@ -103,9 +103,11 @@ const createGoogleMapComponent = wrapper<
 
           mapRef.current = map;
 
-          (onMount || noop)(map);
+          google.maps.event.addListenerOnce(map, 'idle', () => {
+            setMap(map);
 
-          setMap(map);
+            (onMount || noop)(map);
+          });
         }
 
         return onUnmount;
