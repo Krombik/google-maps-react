@@ -2,15 +2,14 @@ import Loader, { LoaderStatus } from 'google-maps-js-api-loader';
 import { useEffect, useState } from 'react';
 
 const handleAutocompleteService = () => {
-  if (Loader.libraries.includes('places'))
+  if (Loader.options.libraries?.includes('places'))
     return new google.maps.places.AutocompleteService();
 
   throw Error('Places library not loaded');
 };
 
 /**
- * @returns `undefined` if google.maps is loading
- * @throws error if load of google maps is not started yet or if `places` not included to libraries in loader options
+ * @throws error if `places` not included to libraries in loader {@link Loader.options options}
  */
 const useAutocompleteService = () => {
   const [autocompleteService, setAutocompleteService] = useState(() =>
@@ -20,11 +19,7 @@ const useAutocompleteService = () => {
   );
 
   useEffect(() => {
-    if (Loader.status === LoaderStatus.NONE) {
-      throw new Error('start the loading of script first');
-    }
-
-    if (Loader.status === LoaderStatus.LOADING) {
+    if (!autocompleteService) {
       Loader.completion.then(() =>
         setAutocompleteService(handleAutocompleteService())
       );

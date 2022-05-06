@@ -1,23 +1,18 @@
-import React, { FC, createContext, useContext } from 'react';
+import React, { FC, createContext, useContext, PropsWithChildren } from 'react';
 import useGoogleMapLoader, {
   GoogleMapLoaderCallbacks,
 } from '../hooks/useGoogleMapLoader';
-import Loader, { LoaderOptions, LoaderStatus } from 'google-maps-js-api-loader';
-
-export type GoogleMapLoaderProps = {
-  options: LoaderOptions;
-} & Partial<GoogleMapLoaderCallbacks>;
+import Loader, { LoaderStatus } from 'google-maps-js-api-loader';
 
 const LoaderContext = createContext<LoaderStatus>(Loader.status);
 
 export const useGoogleMapStatus = () => useContext(LoaderContext);
 
-const GoogleMapLoader: FC<GoogleMapLoaderProps> = ({
+const GoogleMapLoader: FC<PropsWithChildren<GoogleMapLoaderCallbacks>> = ({
   children,
-  options,
   ...callbacks
 }) => {
-  const status = useGoogleMapLoader(options, callbacks);
+  const status = useGoogleMapLoader(callbacks);
 
   if (!children) return null;
 
