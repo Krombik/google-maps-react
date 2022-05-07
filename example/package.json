@@ -11,11 +11,11 @@
   },
   "dependencies": {
     "@types/node": "link:../node_modules/@types/node",
-    "@types/react": "^17.0.38",
-    "@types/react-dom": "^17.0.11",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-scripts": "^5.0.0",
+    "@types/react": "^18.0.9",
+    "@types/react-dom": "^18.0.3",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0",
+    "react-scripts": "^5.0.1",
     "typescript": "link:../node_modules/typescript",
     "google-maps-react": "link:.."
   },

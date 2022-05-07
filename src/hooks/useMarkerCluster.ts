@@ -25,7 +25,7 @@ type Args = [number, number, number, number, number];
 const useMarkerCluster = <T>(
   points: T[],
   getLngLat: (point: T) => [lng: number, lat: number],
-  options: UseMarkerClusterOptions
+  options?: UseMarkerClusterOptions
 ) => {
   const markerCluster = useConst(() => new MarkerCluster(getLngLat, options));
 
@@ -35,7 +35,6 @@ const useMarkerCluster = <T>(
 
   useEffect(() => () => markerCluster.cleanUp(), []);
 
-  //@ts-expect-error
   useEffect(() => {
     const updateState = () => {
       const args = argsRef.current;
@@ -45,7 +44,7 @@ const useMarkerCluster = <T>(
       }
     };
 
-    if (options.asyncMode) {
+    if (options?.asyncMode) {
       markerCluster.loadAsync(points).then(updateState);
 
       return () => {

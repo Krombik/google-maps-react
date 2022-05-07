@@ -142,7 +142,6 @@ const createUseStateAndHandlers = <A extends HandlerName, S extends string>(
 
       const handler = props[handlerName];
 
-      //@ts-expect-error
       useEffect(() => {
         const instance = instanceRef.current;
 
