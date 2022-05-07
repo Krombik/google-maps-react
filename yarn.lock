@@ -2505,10 +2505,10 @@ globrex@^0.1.2:
   resolved "https://registry.yarnpkg.com/globrex/-/globrex-0.1.2.tgz#dd5d9ec826232730cd6793a5e33a9302985e6098"
   integrity sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==
 
-google-maps-js-api-loader@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/google-maps-js-api-loader/-/google-maps-js-api-loader-2.0.0.tgz#9963861f2c2ef2fdb02aade2b27fa6b8658d4373"
-  integrity sha512-V3F0Cy7Bk7dMwWxKcdZx7TyMsgeSuel77jpzfzqZOSoHbtUW2Q5DwDYtTcecgxEq+RcyGx9gyqSSC/tHkXmh9g==
+google-maps-js-api-loader@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/google-maps-js-api-loader/-/google-maps-js-api-loader-2.0.1.tgz#c14408e2ad8c04083a1cde38fcca6955f85a082b"
+  integrity sha512-uCKNpI6CLKULey/1CKx4YfYROvTzChDX+XOUWU1upvBMt4SMLobaZGxTVmrAq+CnV+tDhfeFBW1UgAIQrnZ/lQ==
   dependencies:
     "@googlemaps/js-api-loader" "^1.14.1"
 

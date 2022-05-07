@@ -12,7 +12,7 @@ const useGoogleMapLoader = (callbacks: GoogleMapLoaderCallbacks = {}) => {
 
   useEffect(() => {
     if (status !== LoaderStatus.LOADED) {
-      Loader.completion.then(
+      Loader.load().then(
         () => {
           setStatus(LoaderStatus.LOADED);
 

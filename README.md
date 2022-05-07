@@ -13,23 +13,36 @@ import {
   createMarkerComponent,
   OverlayView,
   LoaderStatus,
+  Loader,
 } from 'google-maps-js-api-react';
+
+Loader.options = { apiKey: API_KEY };
 
 const GoogleMap = createGoogleMapComponent([], []);
 
 const Marker = createMarkerComponent(['onClick'], ['position']);
 
 const Map = () => {
-  const status = useGoogleMapLoader({ apiKey: API_KEY });
+  const status = useGoogleMapLoader();
 
   if (status === LoaderStatus.LOADED)
     return (
       <GoogleMap
         style={style}
-        defaultOptions={{ center: { lat: 0, lng: 0 }, zoom: 3 }}
+        defaultOptions={{
+          center: { lat: -31.56391, lng: 147.154312 },
+          zoom: 6,
+        }}
       >
-        <Marker position={{ lat: -31.56391, lng: 147.154312 }} />
-        <OverlayView lat={-37.75} lng={145.116667}>
+        <Marker
+          position={{ lat: -31.56391, lng: 147.154312 }}
+          onClick={() => console.log('clicked')}
+        />
+        <OverlayView
+          lat={-37.75}
+          lng={145.116667}
+          style={{ background: 'red' }}
+        >
           dot
         </OverlayView>
       </GoogleMap>
@@ -51,30 +64,22 @@ This is because Google maps has a lot of events and properties that can depend o
 
 ```ts
 const useGoogleMapLoader: (
-  options?: LoaderOptions,
-  callbacks: Partial<GoogleMapLoaderCallbacks> = {}
+  callbacks: GoogleMapLoaderCallbacks = {}
 ) => LoaderStatus;
 ```
 
 Hook for google maps script loading
 
-> This library use [google-maps-js-api-loader](https://github.com/Krombik/google-map-loader) for Google Maps JavaScript API loading, you can import `Loader` if you need to start loading outside of react.
+> Note: don't forgot to set options to `Loader`, like in [example](#example)
 
-| Name         | Type                                                                                | Description                                                                        | Default |
-| :----------- | :---------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- | :------ |
-| `options?`   | [LoaderOptions](https://github.com/Krombik/google-maps-js-api-loader#loaderoptions) | loader options, if you already started script loading, you can skip this parameter |         |
-| `callbacks?` | `GoogleMapLoaderCallbacks`                                                          | callbacks for successful/unsuccessful script loading                               | {}      |
+> This library use [google-maps-js-api-loader](https://github.com/Krombik/google-map-loader) for Google Maps JavaScript API loading, you can import `Loader` if you need to start loading outside of react.
 
 ---
 
 ### GoogleMapLoader
 
 ```ts
-const GoogleMapLoader: FC<
-  {
-    options: LoaderOptions;
-  } & Partial<GoogleMapLoaderCallbacks>
->;
+const GoogleMapLoader: FC<PropsWithChildren<GoogleMapLoaderCallbacks>>;
 ```
 
 Context provider which use [useGoogleMapLoader](#usegooglemaploader) under the hood
@@ -285,18 +290,18 @@ creates Marker component, for details see [example](#example)
 ### OverlayView
 
 ```ts
-type C = FC | ComponentClass | keyof JSX.IntrinsicElements;
+type OverlayViewProps<C extends ElementType<any> = 'div'> =
+  ComponentPropsWithRef<C> & {
+    mapPaneLayer?: keyof google.maps.MapPanes;
+    onAdd?: () => void;
+    onDraw?: (x: number, y: number) => void;
+    onRemove?: () => void;
+    component?: C;
+  } & google.maps.LatLngLiteral;
 
-const OverlayView: FC<{
-  mapPaneLayer?: keyof google.maps.MapPanes = 'overlayMouseTarget';
-  component?: C;
-  onAdd?: () => void;
-  onDraw?: (x: number, y: number) => void;
-  onRemove?: () => void;
-  lat: number;
-  lng: number;
-}> &
-  ComponentPropsWithRef<C>;
+const OverlayView: <C extends ElementType = 'div'>(
+  props: OverlayViewProps<C>
+) => ReactPortal;
 ```
 
 [OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view) implementation
@@ -334,7 +339,23 @@ const useAutocompleteService: () =>
   | undefined;
 ```
 
-returns `undefined` if google.maps is not loaded yet, throws error if loading is not started or if `places` not included to libraries in loader options
+returns `undefined` if google.maps is not loaded yet, throws error if `places` not included to libraries in loader options
+
+---
+
+### useAutocompleteService
+
+```ts
+const usePlacesService: (
+  container?: null | (() => HTMLDivElement) | HTMLDivElement | google.maps.Map
+) => google.maps.places.PlacesService | undefined;
+```
+
+| Name         | Description                                                                                                                                 | Default |
+| :----------- | :------------------------------------------------------------------------------------------------------------------------------------------ | :------ |
+| `container?` | container to render the attributions for the results or function which returns it (in this case at first render always returns `undefined`) | null    |
+
+returns `undefined` if google.maps is not loaded yet, throws error if `places` not included to libraries in loader options
 
 ---
 
@@ -343,7 +364,8 @@ returns `undefined` if google.maps is not loaded yet, throws error if loading is
 ```ts
 const useMarkerCluster: <T>(
   points: T[],
-  options: UseMarkerClusterOptions<T>
+  getLngLat: (point: T) => [lng: number, lat: number],
+  options?: UseMarkerClusterOptions
 ) => {
   handleBoundsChange: (
     bounds: google.maps.LatLngBounds,
