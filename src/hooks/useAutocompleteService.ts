@@ -9,9 +9,10 @@ const handleAutocompleteService = () => {
 };
 
 /**
+ * @param startLoading - if `true`, starts loading if {@link google.maps} not loaded yet, overwise just waited for loading if it not done yet
  * @throws error if `places` not included to libraries in loader {@link Loader.options options}
  */
-const useAutocompleteService = () => {
+const useAutocompleteService = (startLoading?: boolean) => {
   const [autocompleteService, setAutocompleteService] = useState(() =>
     Loader.status === LoaderStatus.LOADED
       ? handleAutocompleteService()
@@ -20,7 +21,7 @@ const useAutocompleteService = () => {
 
   useEffect(() => {
     if (!autocompleteService) {
-      Loader.completion.then(() =>
+      (startLoading ? Loader.load() : Loader.completion).then(() =>
         setAutocompleteService(handleAutocompleteService())
       );
     }

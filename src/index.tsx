@@ -36,3 +36,5 @@ export {
 } from './hooks/useGoogleMapLoader';
 
 export { default as useAutocompleteService } from './hooks/useAutocompleteService';
+
+export { default as usePlacesService } from './hooks/usePlacesService';
