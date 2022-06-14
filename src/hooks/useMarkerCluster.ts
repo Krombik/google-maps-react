@@ -20,7 +20,7 @@ export type UseMarkerClusterOptions = MarkerClusterOptions & {
   asyncMode?: boolean;
 };
 
-type Args = [number, number, number, number, number];
+type Args = readonly [number, number, number, number, number];
 
 const useMarkerCluster = <T>(
   points: T[],
@@ -73,7 +73,10 @@ const useMarkerCluster = <T>(
     argsRef.current = args;
 
     if (markerCluster.points) {
-      setState([(...rest) => markerCluster.getPoints(...args, ...rest)]);
+      setState([
+        (markerMapper, clusterMapper, extend) =>
+          markerCluster.getPoints(...args, markerMapper, clusterMapper, extend),
+      ]);
     }
   };
 

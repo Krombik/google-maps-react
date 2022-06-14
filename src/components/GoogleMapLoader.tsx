@@ -8,11 +8,12 @@ const LoaderContext = createContext<LoaderStatus>(Loader.status);
 
 export const useGoogleMapStatus = () => useContext(LoaderContext);
 
-const GoogleMapLoader: FC<PropsWithChildren<GoogleMapLoaderCallbacks>> = ({
-  children,
-  ...callbacks
-}) => {
-  const status = useGoogleMapLoader(callbacks);
+const GoogleMapLoader: FC<PropsWithChildren<GoogleMapLoaderCallbacks>> = (
+  props
+) => {
+  const status = useGoogleMapLoader(props);
+
+  const { children } = props;
 
   if (!children) return null;
 

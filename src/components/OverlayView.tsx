@@ -90,6 +90,7 @@ export type OverlayViewProps<C extends ElementType<any> = 'div'> =
     onDraw?: (x: number, y: number) => void;
     onRemove?: () => void;
     component?: C;
+    preventMapDragging?: boolean;
   } & google.maps.LatLngLiteral;
 
 const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
@@ -102,6 +103,7 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
       onRemove,
       component: Component = 'div',
       mapPaneLayer = 'overlayMouseTarget',
+      preventMapDragging,
       ...rest
     },
     outerRef
@@ -122,11 +124,18 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
       (el) => {
         const data = dataRef.current;
 
+        const blockingOverlayViews = (map as any)
+          .__blockingOverlayViews as Set<HTMLElement>;
+
         if (el) {
           if (data.el !== el) {
             data.overlay?.setMap(null);
 
             data.el = el;
+
+            if (preventMapDragging) {
+              blockingOverlayViews.add(el);
+            }
 
             const style = el.style;
 
@@ -140,6 +149,10 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
           }
         } else if (data.overlay) {
           data.overlay.setMap(null);
+
+          if (preventMapDragging) {
+            blockingOverlayViews.delete(data.el!);
+          }
 
           delete data.el;
 

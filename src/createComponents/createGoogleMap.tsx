@@ -93,24 +93,42 @@ const createGoogleMapComponent = wrapper<
       const [map, setMap] = useState<google.maps.Map>();
 
       useEffect(() => {
-        const mapEl = mapElRef.current;
+        const mapEl = mapElRef.current!;
 
-        if (mapEl) {
-          const map = new google.maps.Map(mapEl, {
-            ...defaultOptions,
-            ...props,
-          });
+        const map = new google.maps.Map(mapEl, {
+          ...defaultOptions,
+          ...props,
+        });
 
-          mapRef.current = map;
+        mapRef.current = map;
 
-          google.maps.event.addListenerOnce(map, 'idle', () => {
-            setMap(map);
+        google.maps.event.addListenerOnce(map, 'idle', () => {
+          setMap(map);
 
-            (onMount || noop)(map);
-          });
-        }
+          (onMount || noop)(map);
+        });
 
-        return onUnmount;
+        const blockingOverlayViews = new Set<HTMLElement>();
+
+        Object.defineProperty(map, '__blockingOverlayViews', {
+          value: blockingOverlayViews,
+          writable: false,
+        });
+
+        const listener = map.addListener(
+          'mousedown',
+          (e: google.maps.MapMouseEvent) => {
+            if (blockingOverlayViews.has(e.domEvent.target as HTMLElement)) {
+              e.stop();
+            }
+          }
+        );
+
+        return () => {
+          listener.remove();
+
+          (onUnmount || noop)();
+        };
       }, []);
 
       useStateAndHandlers(mapRef, props);
