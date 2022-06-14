@@ -134,6 +134,7 @@ const CGoogleMap = ({
                     lat={lat}
                     lng={lng}
                     style={kek}
+                    preventMapDragging
                     onClick={() => {
                       console.log(markerCluster.getChildren(id));
                       map.panTo({ lat, lng });
@@ -195,4 +196,4 @@ const Home: VFC = () => {
   );
 };
 
-export default Map;
+export default Home;
