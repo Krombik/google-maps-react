@@ -131,10 +131,7 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
             data.el = el;
 
             if (preventMapDragging) {
-              el.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              });
+              google.maps.OverlayView.preventMapHitsAndGesturesFrom(el);
             }
 
             const style = el.style;
