@@ -108,27 +108,7 @@ const createGoogleMapComponent = wrapper<
           (onMount || noop)(map);
         });
 
-        const blockingOverlayViews = new Set<HTMLElement>();
-
-        Object.defineProperty(map, '__blockingOverlayViews', {
-          value: blockingOverlayViews,
-          writable: false,
-        });
-
-        const listener = map.addListener(
-          'mousedown',
-          (e: google.maps.MapMouseEvent) => {
-            if (blockingOverlayViews.has(e.domEvent.target as HTMLElement)) {
-              e.stop();
-            }
-          }
-        );
-
-        return () => {
-          listener.remove();
-
-          (onUnmount || noop)();
-        };
+        return onUnmount;
       }, []);
 
       useStateAndHandlers(mapRef, props);
