@@ -121,7 +121,7 @@ const CGoogleMap = ({
           defaultOptions={{ center: locations[0], zoom: 5 }}
           onBoundsChanged={handleBoundsChange}
         >
-          {(map) =>
+          {() =>
             getPoints &&
             getPoints(
               (_, lng, lat) => {
@@ -137,8 +137,8 @@ const CGoogleMap = ({
                     preventMapDragging
                     onClick={() => {
                       console.log(markerCluster.getChildren(id));
-                      map.panTo({ lat, lng });
-                      map.setZoom(markerCluster.getZoom(id));
+                      // map.panTo({ lat, lng });
+                      // map.setZoom(markerCluster.getZoom(id));
                     }}
                   >
                     {count}

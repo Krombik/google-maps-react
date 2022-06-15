@@ -124,9 +124,6 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
       (el) => {
         const data = dataRef.current;
 
-        const blockingOverlayViews = (map as any)
-          .__blockingOverlayViews as Set<HTMLElement>;
-
         if (el) {
           if (data.el !== el) {
             data.overlay?.setMap(null);
@@ -134,7 +131,10 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
             data.el = el;
 
             if (preventMapDragging) {
-              blockingOverlayViews.add(el);
+              el.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              });
             }
 
             const style = el.style;
@@ -149,10 +149,6 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
           }
         } else if (data.overlay) {
           data.overlay.setMap(null);
-
-          if (preventMapDragging) {
-            blockingOverlayViews.delete(data.el!);
-          }
 
           delete data.el;
 
