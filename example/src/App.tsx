@@ -9,6 +9,8 @@ import {
   Loader,
   createMarkerComponent,
   useGoogleMapLoader,
+  useGeocoder,
+  useAutocompleteService,
 } from 'google-maps-react';
 import { useState } from 'react';
 

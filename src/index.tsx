@@ -38,3 +38,5 @@ export {
 export { default as useAutocompleteService } from './hooks/useAutocompleteService';
 
 export { default as usePlacesService } from './hooks/usePlacesService';
+
+export { default as useGeocoder } from './hooks/useGeocoder';

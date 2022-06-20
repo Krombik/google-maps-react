@@ -16,7 +16,7 @@ import {
   Loader,
 } from 'google-maps-js-api-react';
 
-Loader.options = { apiKey: API_KEY };
+Loader.options = { apiKey: API_KEY, defer: true };
 
 const GoogleMap = createGoogleMapComponent([], []);
 
@@ -42,6 +42,8 @@ const Map = () => {
           lat={-37.75}
           lng={145.116667}
           style={{ background: 'red' }}
+          preventMapDragging
+          onClick={() => console.log('clicked')}
         >
           dot
         </OverlayView>
@@ -56,7 +58,7 @@ const Map = () => {
 
 This is because Google maps has a lot of events and properties that can depend on each other (e.g. `zoom` and `onZoomChanged`) and it can be costly (or impossible) to make them controllable/uncontrollable, much easier to define handlers and properties that you need, and process only those.
 
-> Note: if you use createGoogleMapComponent([], ['zoom']), it not means that `map zoom` can be only the value which will be provided by `zoom` prop (like `value` prop in `input` component), it means that if `zoom` prop was changed, `map zoom` will be changed to
+> Note: if you use createGoogleMapComponent([], ['zoom']), it not means that `map zoom` can be only the value which will be provided by `zoom` prop (like `value` prop in `input` component), it means that if `zoom` prop was changed, `map zoom` will be changed to, but not vice versa
 
 ## API
 
@@ -296,6 +298,7 @@ type OverlayViewProps<C extends ElementType<any> = 'div'> =
     onAdd?: () => void;
     onDraw?: (x: number, y: number) => void;
     onRemove?: () => void;
+    preventMapDragging?: boolean;
     component?: C;
   } & google.maps.LatLngLiteral;
 
@@ -306,10 +309,11 @@ const OverlayView: <C extends ElementType = 'div'>(
 
 [OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view) implementation
 
-| Name            | Description                                                                                        | Default              |
-| :-------------- | :------------------------------------------------------------------------------------------------- | :------------------- |
-| `mapPaneLayer?` | [see](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes) | 'overlayMouseTarget' |
-| `component?`    | same to [material-ui component props](https://mui.com/guides/composition/#component-prop)          | 'div'                |
+| Name                  | Description                                                                                                                                                       | Default              |
+| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------- |
+| `mapPaneLayer?`       | [see](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes)                                                                | 'overlayMouseTarget' |
+| `component?`          | same to [material-ui component props](https://mui.com/guides/composition/#component-prop)                                                                         | 'div'                |
+| `preventMapDragging?` | Stops click, tap, drag, and wheel events on the element from bubbling up to the map. Use this to prevent map dragging and zooming, as well as map "click" events. | false                |
 
 > Note: if you pass functional component to `component` prop, you should wrap it in forwardRef like in example below
 
@@ -334,28 +338,48 @@ const AnotherComponent = () => {
 ### useAutocompleteService
 
 ```ts
-const useAutocompleteService: () =>
-  | google.maps.places.AutocompleteService
-  | undefined;
+useAutocompleteService(): google.maps.places.AutocompleteService;
 ```
 
-returns `undefined` if google.maps is not loaded yet, throws error if `places` not included to libraries in loader options
+Returns service even if `map api` not loaded yet, in this case all methods are async (first waiting for `map api` loading and then call method from service), after `map api` loaded went back to normal behavior
+
+This hook don't provokes re-renders.
 
 ---
 
-### useAutocompleteService
+### useGeocoder
 
 ```ts
-const usePlacesService: (
-  container?: null | (() => HTMLDivElement) | HTMLDivElement | google.maps.Map
-) => google.maps.places.PlacesService | undefined;
+useGeocoder(): google.maps.Geocoder;
+```
+
+Returns service even if `map api` not loaded yet, in this case all methods are async (first waiting for `map api` loading and then call method from service), after `map api` loaded went back to normal behavior
+
+This hook don't provokes re-renders.
+
+---
+
+### usePlacesService
+
+```ts
+usePlacesService(
+  container?: null | HTMLElement | google.maps.Map
+): Service<google.maps.places.PlacesService>;
+
+usePlacesService(getContainer: () => HTMLElement):
+  | Service<google.maps.places.PlacesService>
+  | undefined;
 ```
 
 | Name         | Description                                                                                                                                 | Default |
 | :----------- | :------------------------------------------------------------------------------------------------------------------------------------------ | :------ |
 | `container?` | container to render the attributions for the results or function which returns it (in this case at first render always returns `undefined`) | null    |
 
-returns `undefined` if google.maps is not loaded yet, throws error if `places` not included to libraries in loader options
+Returns service even if `map api` not loaded yet, in this case all methods are async (first waiting for `map api` loading and then call method from service), after `map api` loaded went back to normal behavior
+
+This hook provokes re-renders only if `container` is function.
+
+> Note: don't switch between overloads, this will provoke react errors
 
 ---
 
