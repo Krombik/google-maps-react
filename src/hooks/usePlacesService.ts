@@ -1,46 +1,48 @@
-import Loader, { LoaderStatus } from 'google-maps-js-api-loader';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import handleService, { Service } from '../utils/handleService';
 
-const handlePlacesService = (
-  container: null | HTMLDivElement | google.maps.Map = null
-) => {
-  if (Loader.options.libraries?.includes('places'))
-    return new google.maps.places.PlacesService(container as any);
-
-  throw Error('Places library not loaded');
+type UsePlacesService = {
+  (
+    container?: null | HTMLElement | google.maps.Map
+  ): Service<google.maps.places.PlacesService>;
+  (getContainer: () => HTMLElement):
+    | Service<google.maps.places.PlacesService>
+    | undefined;
 };
 
-/**
- * @param startLoading - if `true`, starts loading if {@link google.maps} not loaded yet, overwise just waited for loading if it not done yet
- * @throws error if `places` not included to libraries in loader {@link Loader.options options}
- */
-const usePlacesService = (
-  startLoading?: boolean,
-  container:
-    | null
-    | (() => HTMLDivElement)
-    | HTMLDivElement
-    | google.maps.Map = null
-) => {
-  const [placesService, setPlacesService] = useState(() =>
-    typeof container !== 'function' && Loader.status === LoaderStatus.LOADED
-      ? handlePlacesService(container)
-      : undefined
-  );
+const usePlacesService = ((container = null) => {
+  const getService = () =>
+    handleService(
+      () => new google.maps.places.PlacesService(container as any),
+      [
+        'findPlaceFromPhoneNumber',
+        'findPlaceFromQuery',
+        'getDetails',
+        'nearbySearch',
+        'textSearch',
+      ]
+    );
+
+  if (typeof container !== 'function') {
+    return useMemo(getService, [container]);
+  }
+
+  const [placesService, setPlacesService] =
+    useState<ReturnType<typeof getService>>();
+
+  const prevContainerRef = useRef<HTMLElement>();
 
   useEffect(() => {
-    if (!placesService) {
-      (startLoading ? Loader.load() : Loader.completion).then(() =>
-        setPlacesService(
-          handlePlacesService(
-            typeof container !== 'function' ? container : container()
-          )
-        )
-      );
+    const currContainer = container();
+
+    if (prevContainerRef.current !== currContainer) {
+      prevContainerRef.current = currContainer;
+
+      setPlacesService(getService());
     }
-  }, []);
+  });
 
   return placesService;
-};
+}) as UsePlacesService;
 
 export default usePlacesService;
