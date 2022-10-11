@@ -17,7 +17,7 @@
     "react-dom": "^18.1.0",
     "react-scripts": "^5.0.1",
     "typescript": "link:../node_modules/typescript",
-    "google-maps-react": "link:.."
+    "google-maps-js-api-react": "link:.."
   },
   "eslintConfig": {
     "extends": "react-app"

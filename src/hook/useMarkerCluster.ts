@@ -1,20 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import useConst from './useConst';
-import { GoogleMapsHandlers } from '../createComponents/createGoogleMap';
+import useConst from './utils/useConst';
 import MarkerCluster, {
   ClusterMapper,
   MarkerClusterOptions,
   MarkerMapper,
 } from 'marker-cluster';
 
-type State<T> = [
-  getPoints: <M, C>(
-    markerMapper: MarkerMapper<T, M>,
-    clusterMapper: ClusterMapper<C>,
-    /** @see [extend](https://github.com/Krombik/marker-cluster#getpoints)  */
-    extend?: number
-  ) => (M | C)[]
-];
+type GetPoints<T> = <M, C>(
+  markerMapper: MarkerMapper<T, M>,
+  clusterMapper: ClusterMapper<C>,
+  /** @see [extend](https://github.com/Krombik/marker-cluster#getpoints)  */
+  extend?: number
+) => (M | C)[];
+
+type State<T> = [getPoints: GetPoints<T>];
 
 export type UseMarkerClusterOptions = MarkerClusterOptions & {
   asyncMode?: boolean;
@@ -26,14 +25,18 @@ const useMarkerCluster = <T>(
   points: T[],
   getLngLat: (point: T) => [lng: number, lat: number],
   options?: UseMarkerClusterOptions
-) => {
+): {
+  getPoints: GetPoints<T>;
+  onBoundsChange(this: google.maps.Map): void;
+  markerCluster: MarkerCluster<T>;
+} => {
   const markerCluster = useConst(() => new MarkerCluster(getLngLat, options));
 
-  const [[getPoints], setState] = useState<Partial<State<T>>>([]);
+  const [[getPoints], setState] = useState<State<T>>([() => []]);
 
   const argsRef = useRef<Args>();
 
-  useEffect(() => () => markerCluster.cleanUp(), []);
+  useEffect(() => markerCluster.cleanUp.bind(markerCluster), []);
 
   useEffect(() => {
     const updateState = () => {
@@ -61,27 +64,35 @@ const useMarkerCluster = <T>(
     updateState();
   }, [points]);
 
-  const handleBoundsChange: GoogleMapsHandlers['onBoundsChanged'] = (
-    bounds,
-    map
-  ) => {
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
-
-    const args: Args = [map.getZoom()!, sw.lng(), sw.lat(), ne.lng(), ne.lat()];
-
-    argsRef.current = args;
-
-    if (markerCluster.points) {
-      setState([
-        (markerMapper, clusterMapper, extend) =>
-          markerCluster.getPoints(...args, markerMapper, clusterMapper, extend),
-      ]);
-    }
-  };
-
   return {
-    handleBoundsChange,
+    onBoundsChange() {
+      const bounds = this.getBounds()!;
+
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+
+      const args: Args = [
+        this.getZoom()!,
+        sw.lng(),
+        sw.lat(),
+        ne.lng(),
+        ne.lat(),
+      ];
+
+      argsRef.current = args;
+
+      if (markerCluster.points) {
+        setState([
+          (markerMapper, clusterMapper, extend) =>
+            markerCluster.getPoints(
+              ...args,
+              markerMapper,
+              clusterMapper,
+              extend
+            ),
+        ]);
+      }
+    },
     getPoints,
     markerCluster,
   };

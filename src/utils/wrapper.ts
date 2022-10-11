@@ -1,39 +1,46 @@
-import { FC } from 'react';
-import { GetState, HandlerName, SetLiteral, UnSet } from '../types';
-import createUseStateAndHandlers, {
-  UseStateAndHandlers,
-} from './createUseStateAndHandlers';
+import { forwardRef, ForwardRefRenderFunction } from 'react';
+import { UnGet } from '../types';
+import { HandlerName } from './constants';
+import handleUseHandlersAndProps, {
+  UseHandlersAndProps,
+} from './handleUseHandlersAndProps';
 
-function wrapper<
-  Instance extends Record<SetLiteral<string>, (value: any) => void> | {},
-  Props extends Record<string, unknown>,
-  Handlers extends Partial<Record<HandlerName, (...args: any[]) => void>>,
-  StateKeys extends UnSet<keyof Instance>
->(
-  createRender: <H extends keyof Handlers & HandlerName, S extends StateKeys>(
-    useStateAndHandlers: UseStateAndHandlers
-  ) => FC<
-    Props & {
-      onMount?(instance: Instance): void;
-      onUnmount?(): void;
-    } & Partial<Pick<Handlers, H>> &
-      Pick<GetState<Instance, StateKeys>, S>
-  >,
-  connectedHandlersAndState: Partial<
-    Record<keyof Handlers & HandlerName, UnSet<keyof Instance>>
-  > = {}
-) {
-  return <H extends keyof Handlers & HandlerName, S extends StateKeys>(
-    handlerNamesList: H[],
-    stateNamesList: S[]
+const wrapper =
+  <
+    Instance extends google.maps.MVCObject,
+    DefaultOptions extends {},
+    Handlers extends Partial<Record<HandlerName, (...args: any[]) => void>>,
+    Props extends Record<string, any>,
+    BaseProps extends {} = {}
+  >(
+    createRender: <
+      H extends keyof Handlers & HandlerName,
+      P extends keyof Props
+    >(
+      useHandlersAndProps: UseHandlersAndProps
+    ) => ForwardRefRenderFunction<
+      Instance,
+      BaseProps & { defaultOptions?: Omit<DefaultOptions, 'map'> } & Partial<
+          Pick<Handlers, H>
+        > &
+        Pick<Props, P>
+    >,
+    connectedHandlersAndState: Partial<
+      Record<keyof Handlers, UnGet<keyof Instance>>
+    > = {}
   ) =>
-    createRender<H, S>(
-      createUseStateAndHandlers<H, UnSet<keyof Instance>>(
-        handlerNamesList,
-        stateNamesList,
-        connectedHandlersAndState as Partial<Record<H, UnSet<keyof Instance>>>
+  <H extends keyof Handlers & HandlerName, P extends keyof Props & string>(
+    handlerNamesList: H[],
+    propNamesList: P[]
+  ) =>
+    forwardRef(
+      createRender<H, P>(
+        handleUseHandlersAndProps<H, P>(
+          handlerNamesList,
+          propNamesList,
+          connectedHandlersAndState
+        )
       )
     );
-}
 
 export default wrapper;

@@ -1,75 +1,42 @@
-import Loader, { LoaderStatus } from 'google-maps-js-api-loader';
+import { ClassType, ExtendsOrNever } from '../types';
+import getFromGoogleMap, { GetFromGoogleMap } from './getFromGoogleMap';
+import isFunction from './isFunction';
 
-export type Service<T extends Record<string, any>> = {
-  [key in keyof T]: ReturnType<T[key]> extends Awaited<ReturnType<T[key]>>
-    ?
-        | T[key]
-        | {
-            (...args: Parameters<T[key]>): Promise<ReturnType<T[key]>>;
-          }
-    : T[key];
-};
+type AnyService = Record<string, any>;
 
-const handleFn = <T extends Record<string, any>, K extends keyof T>(
-  service: T,
-  key: K,
-  self: Service<T>
-): T[K] => {
-  const fn: T[K] = service[key].bind(service);
-
-  Object.defineProperty(self, key, {
-    value: fn,
-    writable: false,
-    configurable: false,
-  });
-
-  return fn;
-};
-
-const handleService = <T extends Record<string, any>>(
-  getService: () => T,
-  keys: (keyof T)[]
+const handleService = <Path extends ReadonlyArray<string>>(
+  path: Path,
+  keys: (keyof ExtendsOrNever<
+    InstanceType<GetFromGoogleMap<Path>>,
+    AnyService
+  >)[],
+  arg?: any
 ) => {
-  let service: T;
+  type Instance = ExtendsOrNever<
+    InstanceType<GetFromGoogleMap<Path>>,
+    AnyService
+  >;
 
-  let promise: Promise<T>;
+  let service: Instance;
 
-  const self = {} as Service<T>;
+  const self = {} as Instance;
 
   for (let i = keys.length; i--; ) {
     const key = keys[i];
 
     Object.defineProperty(self, key, {
       get() {
-        if (Loader.status === LoaderStatus.LOADED) {
-          if (!service) {
-            service = getService();
-          }
-
-          return handleFn(service, key, self);
+        if (!service) {
+          service = new (getFromGoogleMap(path) as ClassType<Instance>)(
+            isFunction(arg) ? arg() : arg
+          );
         }
 
-        if (!promise) {
-          promise = Loader.completion.then(() => {
-            service = getService();
+        const value = service[key].bind(service);
 
-            return service;
-          });
-        }
+        Object.defineProperty(self, key, { value });
 
-        let fn: T[keyof T];
-
-        const method = async (...args: any[]) => {
-          if (!fn) {
-            fn = handleFn(await promise, key, self);
-          }
-
-          return fn(...args);
-        };
-
-        Object.defineProperty(self, key, { value: method, configurable: true });
-
-        return method;
+        return value;
       },
       configurable: true,
     });
