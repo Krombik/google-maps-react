@@ -4,7 +4,14 @@
   "description": "Library for convenient work of Google Maps JavaScript API with React",
   "author": "Krombik",
   "license": "MIT",
-  "repository": "Krombik/google-maps-react",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Krombik/google-maps-react.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Krombik/google-maps-react/issues"
+  },
+  "homepage": "https://github.com/Krombik/google-maps-react#readme",
   "type": "module",
   "source": "src/index.ts",
   "exports": {
@@ -54,6 +61,12 @@
     "Map",
     "OverlayView",
     "AutocompleteService",
-    "autocomplete"
+    "autocomplete",
+    "Polygon",
+    "Polyline",
+    "Circle",
+    "Rectangle",
+    "DrawingManager",
+    "HeatmapLayer"
   ]
 }
