@@ -1,7 +1,5 @@
-import { useEffect, useRef, VFC } from 'react';
+import { FC, PropsWithChildren, useEffect, useRef, VFC } from 'react';
 import {
-  GoogleMapLoader,
-  useGoogleMapStatus,
   createGoogleMapComponent,
   useMarkerCluster,
   OverlayView,
@@ -9,17 +7,21 @@ import {
   Loader,
   createMarkerComponent,
   useGoogleMapLoader,
+  createPolygonComponent,
   useGeocoder,
   useAutocompleteService,
-} from 'google-maps-react';
+  GoogleMapProps,
+} from 'google-maps-js-api-react';
 import { useState } from 'react';
 
-Loader.options = {
+Loader.setOptions({
   apiKey: '',
   libraries: ['places', 'geometry'],
-};
+});
 
 const GoogleMap = createGoogleMapComponent(['onBoundsChanged'], []);
+
+const Polygon = createPolygonComponent([], ['paths']);
 
 const style = { height: '100vh', width: '100vw' };
 
@@ -84,14 +86,20 @@ export const pair = (a: number, b: number) => {
   return (sum * (sum + 1)) / 2 + b;
 };
 
-const Kek: VFC<{ lat: number; lng: number }> = ({ lat, lng }) => {
+const Kek: FC<PropsWithChildren<google.maps.LatLngLiteral>> = ({
+  lat,
+  lng,
+  children,
+}) => {
   const ref = useRef<HTMLDivElement>(null);
 
   // useEffect(() => console.log(ref.current), []);
 
   return (
-    <OverlayView ref={ref} lat={lat} lng={lng}>
-      <span>dot</span>
+    <OverlayView lat={lat} lng={lng} preventMapHitsAndGestures>
+      <div ref={ref} style={kek}>
+        {children}
+      </div>
     </OverlayView>
   );
 };
@@ -101,9 +109,9 @@ const CGoogleMap = ({
 }: {
   points: { lat: number; lng: number; id: number }[];
 }) => {
-  const status = useGoogleMapStatus();
+  const status = useGoogleMapLoader();
 
-  const { getPoints, handleBoundsChange, markerCluster } = useMarkerCluster(
+  const { getPoints, onBoundsChange } = useMarkerCluster(
     points,
     (v) => [v.lng, v.lat],
     {
@@ -120,36 +128,34 @@ const CGoogleMap = ({
         <button onClick={() => setOpen((prev) => !prev)}>kek</button>
         <GoogleMap
           style={style}
-          defaultOptions={{ center: locations[0], zoom: 5 }}
-          onBoundsChanged={handleBoundsChange}
+          defaultOptions={{ center: locations[0], zoom: 5, scrollwheel: true }}
+          onBoundsChanged={onBoundsChange}
         >
-          {() =>
-            getPoints &&
-            getPoints(
-              (_, lng, lat) => {
-                return <Kek key={pair(lat, lng)} lat={lat} lng={lng} />;
-              },
-              (lng, lat, count, id) => {
-                return (
-                  <OverlayView
-                    key={id}
-                    lat={lat}
-                    lng={lng}
-                    style={kek}
-                    preventMapDragging
-                    onClick={() => {
-                      console.log(markerCluster.getChildren(id));
-                      // map.panTo({ lat, lng });
-                      // map.setZoom(markerCluster.getZoom(id));
-                    }}
-                  >
-                    {count}
-                  </OverlayView>
-                );
-              },
-              10
-            )
-          }
+          {getPoints(
+            (_, lng, lat) => {
+              return (
+                <Kek key={pair(lat, lng)} lat={lat} lng={lng}>
+                  d
+                </Kek>
+              );
+            },
+            (lng, lat, count, id) => {
+              return (
+                <Kek key={id} lat={lat} lng={lng}>
+                  {count}
+                </Kek>
+              );
+            },
+            10
+          )}
+          <Polygon
+            paths={[
+              { lat: 25.774, lng: -80.19 },
+              { lat: 18.466, lng: -66.118 },
+              { lat: 32.321, lng: -64.757 },
+              { lat: 25.774, lng: -80.19 },
+            ]}
+          />
         </GoogleMap>
       </>
     );
@@ -177,12 +183,8 @@ const Map = () => {
           position={{ lat: -31.56391, lng: 147.154312 }}
           onClick={() => console.log('clicked')}
         />
-        <OverlayView
-          lat={-37.75}
-          lng={145.116667}
-          style={{ background: 'red' }}
-        >
-          dot
+        <OverlayView lat={-37.75} lng={145.116667}>
+          <div style={{ background: 'red' }}>dot</div>
         </OverlayView>
       </GoogleMap>
     );
@@ -191,11 +193,7 @@ const Map = () => {
 };
 
 const Home: VFC = () => {
-  return (
-    <GoogleMapLoader>
-      <CGoogleMap points={randomLocations} />
-    </GoogleMapLoader>
-  );
+  return <CGoogleMap points={randomLocations} />;
 };
 
 export default Home;
