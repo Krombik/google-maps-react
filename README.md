@@ -174,7 +174,7 @@ const createGoogleMapComponent: <
 type Handlers = {
   onAnimationChanged(
     this: google.maps.Marker,
-    animation: NonNullable<google.maps.Animation | null | undefined>
+    animation: google.maps.Animation
   ): void;
   onClickableChanged(this: google.maps.Marker, clickable: boolean): void;
   onCursorChanged(this: google.maps.Marker, cursor: string): void;
@@ -182,9 +182,7 @@ type Handlers = {
   onFlatChanged(this: google.maps.Marker): void;
   onIconChanged(
     this: google.maps.Marker,
-    icon: NonNullable<
-      string | google.maps.Icon | google.maps.Symbol | null | undefined
-    >
+    icon: string | google.maps.Icon | google.maps.Symbol
   ): void;
   onPositionChanged(
     this: google.maps.Marker,
