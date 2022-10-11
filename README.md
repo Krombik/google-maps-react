@@ -511,7 +511,7 @@ type OverlayViewProps = {
   lng: number;
 };
 
-const OverlayView(props: OverlayViewProps) => React.ReactPortal | null;
+const OverlayView: (props: OverlayViewProps) => React.ReactPortal | null;
 ```
 
 [OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view) implementation
