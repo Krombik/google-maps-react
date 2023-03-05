@@ -1,8 +1,10 @@
-import { Expand, GetValue, HandlersMap, PropsMap } from '../types';
-import handleBaseCreator from '../utils/handleBaseCreator';
-import { MouseHandlers } from './types';
+import type { ComponentProps } from 'react';
+import type { GetValue, MouseHandlers } from '../types';
+import handleComponent from '../utils/handleComponent';
 
-type Handlers = HandlersMap<
+export type MarkerProps = ComponentProps<typeof Marker>;
+
+const Marker = handleComponent<
   google.maps.Marker,
   {
     onAnimationChanged: [animation: GetValue<google.maps.Marker, 'animation'>];
@@ -16,11 +18,7 @@ type Handlers = HandlersMap<
     onTitleChanged: [title: GetValue<google.maps.Marker, 'title'>];
     onVisibleChanged: [visible: GetValue<google.maps.Marker, 'visible'>];
     onZIndexChanged: [zIndex: GetValue<google.maps.Marker, 'zIndex'>];
-  } & MouseHandlers
->;
-
-type Props = PropsMap<
-  google.maps.Marker,
+  } & MouseHandlers,
   {
     /**
      * Which animation to play when marker is added to a map.
@@ -68,15 +66,6 @@ type Props = PropsMap<
      */
     zIndex: true;
   }
->;
-
-export type MarkerProps = Expand<Handlers & Props>;
-
-const createMarkerComponent = handleBaseCreator<
-  ['Marker'],
-  google.maps.MarkerOptions,
-  Handlers,
-  Props
 >(['Marker'], {
   onAnimationChanged: 'animation',
   onCursorChanged: 'cursor',
@@ -89,4 +78,4 @@ const createMarkerComponent = handleBaseCreator<
   onZIndexChanged: 'zIndex',
 });
 
-export default createMarkerComponent;
+export default Marker;

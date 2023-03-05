@@ -1,8 +1,9 @@
 import handleUseService from '../../utils/handleUseService';
 
-const useDistanceMatrixService = handleUseService(
-  ['DistanceMatrixService'] as const,
-  ['getDistanceMatrix']
-);
+const useDistanceMatrixService =
+  handleUseService<google.maps.DistanceMatrixService>(
+    ['DistanceMatrixService'],
+    ['getDistanceMatrix']
+  );
 
 export default useDistanceMatrixService;

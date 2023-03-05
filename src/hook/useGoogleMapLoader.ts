@@ -1,53 +1,40 @@
-import Loader, { LoaderStatus } from 'google-maps-js-api-loader';
+import Loader from 'google-maps-js-api-loader';
 import { useState, useLayoutEffect } from 'react';
 import noop from '../utils/noop';
 
 type Options = {
   onLoaded?: () => void;
   onError?: (err: ErrorEvent | Error) => void;
-  silent?: boolean;
 };
 
 const IS_CLIENT = typeof window != 'undefined';
 
-const useGoogleMapLoader = ((options: Options = {}) => {
+const useGoogleMapLoader = /* #__PURE__ */ (options?: Options) => {
   let unlisten: undefined | (() => void);
-
-  const laud = !options.silent;
 
   const [status, setStatus] = useState(() => {
     if (IS_CLIENT && Loader.status < 2) {
-      const { onLoaded, onError } = options;
+      const onLoad = (options && options.onLoaded) || noop;
 
-      const handleLoaded = laud
-        ? () => {
-            setStatus(2);
+      const onError = (options && options.onError) || noop;
 
-            (onLoaded || noop)();
-          }
-        : onLoaded;
+      const unlistenLoaded = Loader.addListener(2, () => {
+        setStatus(2);
 
-      const handleError = laud
-        ? (err: any) => {
-            setStatus(3);
+        onLoad();
+      });
 
-            (onError || noop)(err);
-          }
-        : onError;
+      const unlistenError = Loader.addListener(3, (err: any) => {
+        setStatus(3);
 
-      const unlistenLoaded =
-        handleLoaded && Loader.addListener(2, handleLoaded);
+        onError(err);
+      });
 
-      const unlistenError = handleError && Loader.addListener(3, handleError);
+      unlisten = () => {
+        unlistenLoaded();
 
-      unlisten =
-        unlistenLoaded && unlistenError
-          ? () => {
-              unlistenLoaded();
-
-              unlistenError();
-            }
-          : unlistenLoaded || unlistenError;
+        unlistenError();
+      };
 
       Loader.load();
     }
@@ -57,12 +44,7 @@ const useGoogleMapLoader = ((options: Options = {}) => {
 
   useLayoutEffect(() => unlisten, []);
 
-  if (laud) {
-    return status;
-  }
-}) as {
-  (options?: Omit<Options, 'silent'> & { silent?: false }): LoaderStatus;
-  (options: Omit<Options, 'silent'> & { silent: true }): void;
+  return status;
 };
 
 export default useGoogleMapLoader;

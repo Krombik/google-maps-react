@@ -9,26 +9,24 @@ Library for convenient work of Google Maps JavaScript API with React
 ```tsx
 import {
   useGoogleMapLoader,
-  createGoogleMapComponent,
-  createMarkerComponent,
+  GoogleMap,
+  Marker,
   OverlayView,
   LoaderStatus,
   Loader,
 } from 'google-maps-js-api-react';
+import { useCallback } from 'react';
 
 Loader.setOptions({ apiKey: API_KEY, defer: true });
-
-const GoogleMap = createGoogleMapComponent([], []);
-
-const Marker = createMarkerComponent(['onClick'], ['position']);
 
 const Map = () => {
   const status = useGoogleMapLoader();
 
-  if (status === LoaderStatus.LOADED)
+  const handleClick = useCallback(() => console.log('clicked', []));
+
+  if (status === LoaderStatus.LOADED) {
     return (
       <GoogleMap
-        style={style}
         defaultOptions={{
           center: { lat: -31.56391, lng: 147.154312 },
           zoom: 6,
@@ -36,27 +34,38 @@ const Map = () => {
       >
         <Marker
           position={{ lat: -31.56391, lng: 147.154312 }}
-          onClick={() => console.log('clicked')}
+          onClick={handleClick}
         />
         <OverlayView lat={-37.75} lng={145.116667} preventMapHits>
-          <div
-            style={{ background: 'red' }}
-            onClick={() => console.log('clicked')}
-          >
+          <div style={{ background: 'red' }} onClick={handleClick}>
             dot
           </div>
         </OverlayView>
       </GoogleMap>
     );
+  }
 
   return null;
 };
 ```
 
+> **This library does not attempt to implement "controlled" React logic**, for example:
+>
+> ```jsx
+> const Map = () => {
+>   const [zoom, setZoom] = useState(5);
+>
+>   return <GoogleMap zoom={zoom} />;
+> };
+> ```
+>
+> the map zoom level is not bound to `5` and can be changed by the user, but if the `zoom` variable is changed, the map zoom level will also be changed.
+
 ## API
 
-- [createComponent](#createcomponent)
+- [Components](#components)
   - [GoogleMap](#googlemap)
+  - [OverlayView](#overlayview)
   - [Marker](#marker)
   - [Polygon](#polygon)
   - [Polyline](#polyline)
@@ -64,13 +73,11 @@ const Map = () => {
   - [Rectangle](#rectangle)
   - [DrawingManager](#drawingmanager)
   - [HeatmapLayer](#heatmaplayer)
-- [Components](#components)
-  - [OverlayView](#overlayview)
 - [Hooks](#hooks)
   - [useGoogleMap](#usegooglemap)
   - [useGoogleMapLoader](#usegooglemaploader)
   - [useMarkerCluster](#usemarkercluster)
-  - [useService](#useservice)
+  - [Service hooks](#service-hooks)
     - [useAutocompleteService](#useautocompleteservice)
     - [useDirectionService](#usedirectionservice)
     - [useDistanceMatrixService](#usedistancematrixservice)
@@ -80,421 +87,60 @@ const Map = () => {
     - [usePlacesService](#useplacesservice)
     - [useStreetViewService](#usestreetviewservice)
 
-### createComponents
-
-- **Q**: Why I should create components?
-
-- **A**: Because Google maps has a lot of events and properties that can depend on each other (e.g. `zoom` and `onZoomChanged`) and it can be costly (or impossible) to make them controllable/uncontrollable, much easier to define handlers and properties that you need, and process only those.
-
-- **Q**: How it works?
-
-- **A**: Each `createComponent` takes 2 parameters: an array with the names of the handlers and an array with the names of the properties, the specified handler will be executed when the corresponding event is fired, the specified property will trigger corresponding value change if `prevProp !== currentProp`
-
-- **Q**: I just want to pass default values, is it possible?
-
-- **A**: Yes, just use `defaultOptions` prop
-
-- **Q**: Can I get access to the instance?
-
-- **A**: Yes, just pass `ref` to the component
-
-> Note: if you use createGoogleMapComponent([], ['zoom']), it not means that `map zoom` can be only the value which will be provided by `zoom` prop (like `value` prop in `input` component), it means that if `zoom` prop was changed, `map zoom` will be changed to
-
----
+## Components
 
 ### GoogleMap
 
+[Map](https://developers.google.com/maps/documentation/javascript/reference/map#Map) implementation
+
 ```ts
-type Handlers = {
-  onBoundsChanged(
+type GoogleMapProps = {
+  onBoundsChanged?(
     this: google.maps.Map,
     bounds: google.maps.LatLngBounds
   ): void;
-  onCenterChanged(this: google.maps.Map, center: google.maps.LatLng): void;
-  onDrag(this: google.maps.Map): void;
-  onDragEnd(this: google.maps.Map): void;
-  onDragStart(this: google.maps.Map): void;
-  onHeadingChanged(this: google.maps.Map, heading: number): void;
-  onIdle(this: google.maps.Map): void;
-  onMapTypeIdChanged(this: google.maps.Map, mapTypeId: string): void;
-  onProjectionChanged(
+  onCenterChanged?(this: google.maps.Map, center: google.maps.LatLng): void;
+  onDrag?(this: google.maps.Map): void;
+  onDragEnd?(this: google.maps.Map): void;
+  onDragStart?(this: google.maps.Map): void;
+  onHeadingChanged?(this: google.maps.Map, heading: number): void;
+  onIdle?(this: google.maps.Map): void;
+  onMapTypeIdChanged?(this: google.maps.Map, mapTypeId: string): void;
+  onProjectionChanged?(
     this: google.maps.Map,
     projection: google.maps.Projection
   ): void;
-  onResize(this: google.maps.Map): void;
-  onTilesLoaded(this: google.maps.Map): void;
-  onTiltChanged(this: google.maps.Map, tilt: number): void;
-  onZoomChanged(this: google.maps.Map, zoom: number): void;
-  onClick(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onContextMenu(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onDoubleClick(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseDown(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseUp(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseMove(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseOut(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseOver(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onRightClick(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-};
-
-type Props = {
-  center: google.maps.LatLng | google.maps.LatLngLiteral;
-  clickableIcons: boolean;
-  heading: number;
-  mapTypeId: string;
-  streetView: google.maps.StreetViewPanorama;
-  zoom: number;
-};
-
-type BaseProps = {
+  onResize?(this: google.maps.Map): void;
+  onTilesLoaded?(this: google.maps.Map): void;
+  onTiltChanged?(this: google.maps.Map, tilt: number): void;
+  onZoomChanged?(this: google.maps.Map, zoom: number): void;
+  onClick?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onContextMenu?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onDoubleClick?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onMouseDown?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onMouseUp?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onMouseMove?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onMouseOut?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onMouseOver?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  onRightClick?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
+  center?: google.maps.LatLng | google.maps.LatLngLiteral;
+  clickableIcons?: boolean;
+  heading?: number;
+  mapTypeId?: string;
+  streetView?: google.maps.StreetViewPanorama;
+  zoom?: number;
+  defaultOptions?: google.maps.MapOptions;
   className?: string;
-  style?: CSSProperties;
+  style?: React.CSSProperties;
   children?: React.ReactNode;
 };
 
-const createGoogleMapComponent: <
-  H extends keyof Handlers,
-  P extends keyof Props
->(
-  handlerNamesList: H[],
-  propNamesList: P[]
-) => React.ForwardRefExoticComponent<
-  BaseProps & {
-    defaultOptions?: google.maps.MapOptions;
-  } & Partial<Pick<Handlers, H>> &
-    Pick<Props, P> &
-    React.RefAttributes<google.maps.Map>
+const GoogleMap: React.ForwardRefExoticComponent<
+  GoogleMapProps & React.RefAttributes<google.maps.Map>
 >;
 ```
 
 ---
-
-### Marker
-
-```ts
-type Handlers = {
-  onAnimationChanged(
-    this: google.maps.Marker,
-    animation: google.maps.Animation
-  ): void;
-  onClickableChanged(this: google.maps.Marker, clickable: boolean): void;
-  onCursorChanged(this: google.maps.Marker, cursor: string): void;
-  onDraggableChanged(this: google.maps.Marker, draggable: boolean): void;
-  onFlatChanged(this: google.maps.Marker): void;
-  onIconChanged(
-    this: google.maps.Marker,
-    icon: string | google.maps.Icon | google.maps.Symbol
-  ): void;
-  onPositionChanged(
-    this: google.maps.Marker,
-    position: google.maps.LatLng
-  ): void;
-  onShapeChanged(
-    this: google.maps.Marker,
-    shape: google.maps.MarkerShape
-  ): void;
-  onTitleChanged(this: google.maps.Marker, title: string): void;
-  onVisibleChanged(this: google.maps.Marker, visible: boolean): void;
-  onZIndexChanged(this: google.maps.Marker, zIndex: number): void;
-  onClick(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onContextMenu(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDoubleClick(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDrag(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDragEnd(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDragStart(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseDown(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseMove(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseOut(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseOver(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseUp(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onRightClick(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-};
-
-type Props = {
-  animation: google.maps.Animation;
-  clickable: boolean;
-  cursor: string;
-  draggable: boolean;
-  icon: string | google.maps.Icon | google.maps.Symbol;
-  label: string | google.maps.MarkerLabel;
-  opacity: number;
-  position: google.maps.LatLngLiteral | google.maps.LatLng;
-  shape: google.maps.MarkerShape;
-  title: string;
-  visible: boolean;
-  zIndex: number;
-};
-
-const createMarkerComponent: <H extends keyof Handlers, P extends keyof Props>(
-  handlerNamesList: H[],
-  propNamesList: P[]
-) => React.ForwardRefExoticComponent<
-  {
-    defaultOptions?: Omit<google.maps.MarkerOptions, 'map'>;
-  } & Partial<Pick<Handlers, H>> &
-    Pick<Props, P> &
-    React.RefAttributes<google.maps.Marker>
->;
-```
-
----
-
-### Polygon
-
-```ts
-type Handlers = {
-  onClick(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onContextMenu(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onDoubleClick(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onMouseDown(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onMouseMove(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onMouseOut(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onMouseOver(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onMouseUp(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onRightClick(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onDrag(this: google.maps.Polygon, e: google.maps.MapMouseEvent): void;
-  onDragEnd(this: google.maps.Polygon, e: google.maps.MapMouseEvent): void;
-  onDragStart(this: google.maps.Polygon, e: google.maps.MapMouseEvent): void;
-};
-
-type Props = {
-  draggable: boolean;
-  editable: boolean;
-  paths: any[] | google.maps.MVCArray<any>;
-  visible: boolean;
-};
-
-const createPolygonComponent: <H extends keyof Handlers, P extends keyof Props>(
-  handlerNamesList: H[],
-  propNamesList: P[]
-) => React.ForwardRefExoticComponent<
-  {
-    defaultOptions?: Omit<google.maps.PolygonOptions, 'map'>;
-  } & Partial<Pick<Handlers, H>> &
-    Pick<Props, P> &
-    React.RefAttributes<google.maps.Polygon>
->;
-```
-
----
-
-### Polyline
-
-```ts
-type Handlers = {
-  onClick(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onContextMenu(
-    this: google.maps.Polyline,
-    e: google.maps.PolyMouseEvent
-  ): void;
-  onDoubleClick(
-    this: google.maps.Polyline,
-    e: google.maps.PolyMouseEvent
-  ): void;
-  onMouseDown(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onMouseMove(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onMouseOut(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onMouseOver(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onMouseUp(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onRightClick(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onDrag(this: google.maps.Polyline, e: google.maps.MapMouseEvent): void;
-  onDragEnd(this: google.maps.Polyline, e: google.maps.MapMouseEvent): void;
-  onDragStart(this: google.maps.Polyline, e: google.maps.MapMouseEvent): void;
-};
-
-type Props = {
-  draggable: boolean;
-  editable: boolean;
-  path:
-    | google.maps.MVCArray<google.maps.LatLng>
-    | Array<google.maps.LatLngLiteral | google.maps.LatLng>;
-  visible: boolean;
-};
-
-const createPolylineComponent: <
-  H extends keyof Handlers,
-  P extends keyof Props
->(
-  handlerNamesList: H[],
-  propNamesList: P[]
-) => React.ForwardRefExoticComponent<
-  {
-    defaultOptions?: Omit<google.maps.PolylineOptions, 'map'>;
-  } & Partial<Pick<Handlers, H>> &
-    Pick<Props, P> &
-    React.RefAttributes<google.maps.Polyline>
->;
-```
-
----
-
-### Circle
-
-```ts
-type Handlers = {
-  onCenterChange(this: google.maps.Circle, center: google.maps.LatLng): void;
-  onRadiusChange(this: google.maps.Circle, radius: number): void;
-  onClick(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onContextMenu(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onDoubleClick(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onDrag(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onDragEnd(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onDragStart(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseDown(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseMove(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseOut(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseOver(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseUp(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onRightClick(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-};
-
-type Props = {
-  center: google.maps.LatLngLiteral | google.maps.LatLng;
-  draggable: boolean;
-  editable: boolean;
-  radius: number;
-  visible: boolean;
-};
-
-const createCircleComponent: <H extends keyof Handlers, P extends keyof Props>(
-  handlerNamesList: H[],
-  propNamesList: P[]
-) => React.ForwardRefExoticComponent<
-  {
-    defaultOptions?: Omit<google.maps.CircleOptions, 'map'>;
-  } & Partial<Pick<Handlers, H>> &
-    Pick<Props, P> &
-    React.RefAttributes<google.maps.Circle>
->;
-```
-
----
-
-### Rectangle
-
-```ts
-type Handlers = {
-  onBoundsChange(
-    this: google.maps.Rectangle,
-    bounds: google.maps.LatLngBounds
-  ): void;
-  onClick(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onContextMenu(
-    this: google.maps.Rectangle,
-    e: google.maps.MapMouseEvent
-  ): void;
-  onDoubleClick(
-    this: google.maps.Rectangle,
-    e: google.maps.MapMouseEvent
-  ): void;
-  onDrag(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onDragEnd(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onDragStart(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseDown(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseMove(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseOut(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseOver(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseUp(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onRightClick(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-};
-
-type Props = {
-  bounds: google.maps.LatLngBounds | google.maps.LatLngBoundsLiteral;
-  draggable: boolean;
-  editable: boolean;
-  visible: boolean;
-};
-
-const createRectangleComponent: <
-  H extends keyof Handlers,
-  P extends keyof Props
->(
-  handlerNamesList: H[],
-  propNamesList: P[]
-) => React.ForwardRefExoticComponent<
-  {
-    defaultOptions?: Omit<google.maps.RectangleOptions, 'map'>;
-  } & Partial<Pick<Handlers, H>> &
-    Pick<Props, P> &
-    React.RefAttributes<google.maps.Rectangle>
->;
-```
-
----
-
-### DrawingManager
-
-```ts
-type Handlers = {
-  onCircleComplete(
-    this: google.maps.drawing.DrawingManager,
-    circle: google.maps.Circle
-  ): void;
-  onMarkerComplete(
-    this: google.maps.drawing.DrawingManager,
-    marker: google.maps.Marker
-  ): void;
-  onOverlayComplete(
-    this: google.maps.drawing.DrawingManager,
-    event: google.maps.drawing.OverlayCompleteEvent
-  ): void;
-  onPolygonComplete(
-    this: google.maps.drawing.DrawingManager,
-    polygon: google.maps.Polygon
-  ): void;
-  onPolylineComplete(
-    this: google.maps.drawing.DrawingManager,
-    polyline: google.maps.Polyline
-  ): void;
-  onRectangleComplete(
-    this: google.maps.drawing.DrawingManager,
-    rectangle: google.maps.Rectangle
-  ): void;
-};
-
-type Props = {
-  drawingMode: google.maps.drawing.OverlayType;
-};
-
-const createDrawingManagerComponent: <
-  H extends keyof Handlers,
-  P extends keyof Props
->(
-  handlerNamesList: H[],
-  propNamesList: P[]
-) => React.ForwardRefExoticComponent<
-  {
-    defaultOptions?: Omit<google.maps.drawing.DrawingManagerOptions, 'map'>;
-  } & Partial<Pick<Handlers, H>> &
-    Pick<Props, P> &
-    React.RefAttributes<google.maps.drawing.DrawingManager>
->;
-```
-
-### HeatmapLayer
-
-```ts
-type Props = {
-  data:
-    | google.maps.MVCArray<
-        google.maps.LatLng | google.maps.visualization.WeightedLocation
-      >
-    | Array<google.maps.LatLng | google.maps.visualization.WeightedLocation>;
-};
-
-const createHeatmapLayerComponent: <H extends never, P extends keyof Props>(
-  handlerNamesList: H[],
-  propNamesList: P[]
-) => React.ForwardRefExoticComponent<
-  {
-    defaultOptions?: Omit<google.maps.visualization.HeatmapLayerOptions, 'map'>;
-  } & Pick<Props, P> &
-    React.RefAttributes<google.maps.visualization.HeatmapLayer>
->;
-```
-
----
-
-### Components
 
 ### OverlayView
 
@@ -506,15 +152,15 @@ type OverlayViewProps = {
   onRemove?(): void;
   preventMapHitsAndGestures?: boolean;
   preventMapHits?: boolean;
-  children: ReactElement;
+  children: React.ReactElement;
   lat: number;
   lng: number;
 };
 
-const OverlayView: (props: OverlayViewProps) => React.ReactPortal | null;
+const OverlayView: FC<OverlayViewProps>;
 ```
 
-[OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view) implementation
+[OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#OverlayView) implementation
 
 | Name                         | Description                                                                                                                                                        | Default                |
 | :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
@@ -530,7 +176,7 @@ const SomeComponent = forwardRef(({ children }, ref) => (
 
 const AnotherComponent = () => {
   return (
-    <OverlayView lat={0} lng={0} ref={ref}>
+    <OverlayView lat={0} lng={0}>
       <SomeComponent>hi</SomeComponent>
     </OverlayView>
   );
@@ -539,7 +185,292 @@ const AnotherComponent = () => {
 
 ---
 
-### Hooks
+### Marker
+
+[Marker](https://developers.google.com/maps/documentation/javascript/reference/marker#Marker) implementation
+
+```ts
+type MarkerProps = {
+  onAnimationChanged?(
+    this: google.maps.Marker,
+    animation: google.maps.Animation
+  ): void;
+  onClickableChanged?(this: google.maps.Marker, clickable: boolean): void;
+  onCursorChanged?(this: google.maps.Marker, cursor: string): void;
+  onDraggableChanged?(this: google.maps.Marker, draggable: boolean): void;
+  onFlatChanged?(this: google.maps.Marker): void;
+  onIconChanged?(
+    this: google.maps.Marker,
+    icon: string | google.maps.Icon | google.maps.Symbol
+  ): void;
+  onPositionChanged?(
+    this: google.maps.Marker,
+    position: google.maps.LatLng
+  ): void;
+  onShapeChanged?(
+    this: google.maps.Marker,
+    shape: google.maps.MarkerShape
+  ): void;
+  onTitleChanged?(this: google.maps.Marker, title: string): void;
+  onVisibleChanged?(this: google.maps.Marker, visible: boolean): void;
+  onZIndexChanged?(this: google.maps.Marker, zIndex: number): void;
+  onClick?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onContextMenu?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onDoubleClick?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onDrag?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onDragEnd?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onDragStart?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onMouseDown?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onMouseMove?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onMouseOut?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onMouseOver?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onMouseUp?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  onRightClick?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
+  animation?: google.maps.Animation;
+  clickable?: boolean;
+  cursor?: string;
+  draggable?: boolean;
+  icon?: string | google.maps.Icon | google.maps.Symbol;
+  label?: string | google.maps.MarkerLabel;
+  opacity?: number;
+  position?: google.maps.LatLngLiteral | google.maps.LatLng;
+  shape?: google.maps.MarkerShape;
+  title?: string;
+  visible?: boolean;
+  zIndex?: number;
+  defaultOptions?: google.maps.MarkerOptions;
+};
+
+const Marker: React.ForwardRefExoticComponent<
+  MarkerProps & React.RefAttributes<google.maps.Marker>
+>;
+```
+
+---
+
+### Polygon
+
+[Polygon](https://developers.google.com/maps/documentation/javascript/reference/polygon#Polygon) implementation
+
+```ts
+type PolygonProps = {
+  onClick?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
+  onContextMenu?(
+    this: google.maps.Polygon,
+    e: google.maps.PolyMouseEvent
+  ): void;
+  onDoubleClick?(
+    this: google.maps.Polygon,
+    e: google.maps.PolyMouseEvent
+  ): void;
+  onMouseDown?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
+  onMouseMove?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
+  onMouseOut?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
+  onMouseOver?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
+  onMouseUp?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
+  onRightClick?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
+  onDrag?(this: google.maps.Polygon, e: google.maps.MapMouseEvent): void;
+  onDragEnd?(this: google.maps.Polygon, e: google.maps.MapMouseEvent): void;
+  onDragStart?(this: google.maps.Polygon, e: google.maps.MapMouseEvent): void;
+  draggable?: boolean;
+  editable?: boolean;
+  paths?: any[] | google.maps.MVCArray<any>;
+  visible?: boolean;
+  defaultOptions?: google.maps.PolygonOptions;
+};
+
+const Polygon: React.ForwardRefExoticComponent<
+  PolygonProps & React.RefAttributes<google.maps.Polygon>
+>;
+```
+
+---
+
+### Polyline
+
+[Polyline](https://developers.google.com/maps/documentation/javascript/reference/polygon#Polyline) implementation
+
+```ts
+type PolylineProps = {
+  onClick?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
+  onContextMenu?(
+    this: google.maps.Polyline,
+    e: google.maps.PolyMouseEvent
+  ): void;
+  onDoubleClick?(
+    this: google.maps.Polyline,
+    e: google.maps.PolyMouseEvent
+  ): void;
+  onMouseDown?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
+  onMouseMove?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
+  onMouseOut?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
+  onMouseOver?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
+  onMouseUp?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
+  onRightClick?(
+    this: google.maps.Polyline,
+    e: google.maps.PolyMouseEvent
+  ): void;
+  onDrag?(this: google.maps.Polyline, e: google.maps.MapMouseEvent): void;
+  onDragEnd?(this: google.maps.Polyline, e: google.maps.MapMouseEvent): void;
+  onDragStart?(this: google.maps.Polyline, e: google.maps.MapMouseEvent): void;
+  draggable?: boolean;
+  editable?: boolean;
+  path?:
+    | google.maps.MVCArray<google.maps.LatLng>
+    | Array<google.maps.LatLngLiteral | google.maps.LatLng>;
+  visible?: boolean;
+  defaultOptions?: google.maps.PolylineOptions;
+};
+
+const Polyline: React.ForwardRefExoticComponent<
+  PolygonProps & React.RefAttributes<google.maps.Polyline>
+>;
+```
+
+---
+
+### Circle
+
+[Circle](https://developers.google.com/maps/documentation/javascript/reference/polygon#Circle) implementation
+
+```ts
+type CircleProps = {
+  onCenterChange?(this: google.maps.Circle, center: google.maps.LatLng): void;
+  onRadiusChange?(this: google.maps.Circle, radius: number): void;
+  onClick?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onContextMenu?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onDoubleClick?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onDrag?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onDragEnd?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onDragStart?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onMouseDown?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onMouseMove?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onMouseOut?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onMouseOver?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onMouseUp?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  onRightClick?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
+  center?: google.maps.LatLngLiteral | google.maps.LatLng;
+  draggable?: boolean;
+  editable?: boolean;
+  radius?: number;
+  visible?: boolean;
+  defaultOptions?: google.maps.CircleOptions;
+};
+
+const Circle: React.ForwardRefExoticComponent<
+  CircleProps & React.RefAttributes<google.maps.Circle>
+>;
+```
+
+---
+
+### Rectangle
+
+[Rectangle](https://developers.google.com/maps/documentation/javascript/reference/polygon#Rectangle) implementation
+
+```ts
+type RectangleProps = {
+  onBoundsChange?(
+    this: google.maps.Rectangle,
+    bounds: google.maps.LatLngBounds
+  ): void;
+  onClick?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
+  onContextMenu?(
+    this: google.maps.Rectangle,
+    e: google.maps.MapMouseEvent
+  ): void;
+  onDoubleClick?(
+    this: google.maps.Rectangle,
+    e: google.maps.MapMouseEvent
+  ): void;
+  onDrag?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
+  onDragEnd?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
+  onDragStart?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
+  onMouseDown?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
+  onMouseMove?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
+  onMouseOut?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
+  onMouseOver?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
+  onMouseUp?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
+  onRightClick?(
+    this: google.maps.Rectangle,
+    e: google.maps.MapMouseEvent
+  ): void;
+  bounds?: google.maps.LatLngBounds | google.maps.LatLngBoundsLiteral;
+  draggable?: boolean;
+  editable?: boolean;
+  visible?: boolean;
+  defaultOptions?: google.maps.RectangleOptions;
+};
+
+const Rectangle: React.ForwardRefExoticComponent<
+  RectangleProps & React.RefAttributes<google.maps.Rectangle>
+>;
+```
+
+---
+
+### DrawingManager
+
+[DrawingManager](https://developers.google.com/maps/documentation/javascript/reference/drawing#DrawingManager) implementation
+
+```ts
+type DrawingManagerProps = {
+  onCircleComplete?(
+    this: google.maps.drawing.DrawingManager,
+    circle: google.maps.Circle
+  ): void;
+  onMarkerComplete?(
+    this: google.maps.drawing.DrawingManager,
+    marker: google.maps.Marker
+  ): void;
+  onOverlayComplete?(
+    this: google.maps.drawing.DrawingManager,
+    event: google.maps.drawing.OverlayCompleteEvent
+  ): void;
+  onPolygonComplete?(
+    this: google.maps.drawing.DrawingManager,
+    polygon: google.maps.Polygon
+  ): void;
+  onPolylineComplete?(
+    this: google.maps.drawing.DrawingManager,
+    polyline: google.maps.Polyline
+  ): void;
+  onRectangleComplete?(
+    this: google.maps.drawing.DrawingManager,
+    rectangle: google.maps.Rectangle
+  ): void;
+  drawingMode?: google.maps.drawing.OverlayType;
+  defaultOptions?: google.maps.drawing.DrawingManagerOptions;
+};
+
+const DrawingManager: React.ForwardRefExoticComponent<
+  DrawingManagerProps & React.RefAttributes<google.maps.drawing.DrawingManager>
+>;
+```
+
+### HeatmapLayer
+
+[HeatmapLayer](https://developers.google.com/maps/documentation/javascript/reference/visualization#HeatmapLayer) implementation
+
+```ts
+type HeatmapLayerProps = {
+  data?:
+    | google.maps.MVCArray<
+        google.maps.LatLng | google.maps.visualization.WeightedLocation
+      >
+    | Array<google.maps.LatLng | google.maps.visualization.WeightedLocation>;
+  defaultOptions?: google.maps.visualization.HeatmapLayerOptions;
+};
+
+const HeatmapLayer: React.ForwardRefExoticComponent<
+  HeatmapLayerProps &
+    React.RefAttributes<google.maps.visualization.HeatmapLayer>
+>;
+```
+
+---
+
+## Hooks
 
 ### useGoogleMap
 
@@ -554,74 +485,34 @@ Context of [GoogleMap](#googlemap) component
 ### useGoogleMapLoader
 
 ```ts
+enum LoaderStatus {
+  NONE = 0,
+  LOADING = 1,
+  LOADED = 2,
+  ERROR = 3,
+}
+
 type Options = {
   onLoaded?(): void;
   onError?(err: ErrorEvent | Error): void;
 };
 
-const useGoogleMapLoader: {
-  (
-    options?: Options & {
-      silent?: false;
-    }
-  ): LoaderStatus;
-  (
-    options: Options & {
-      silent: true;
-    }
-  ): void;
-};
+const useGoogleMapLoader: (options?: Options) => LoaderStatus;
 ```
+
+[google-maps-js-api-loader](https://github.com/Krombik/google-map-loader) implementation
 
 Hook for google maps script loading
 
-| Name      | Description                                                                   | Default |
-| :-------- | :---------------------------------------------------------------------------- | :------ |
-| `silent?` | if `true` - loading will be silently (not triggers rerender on loading/error) | `false` |
-
 > Note: don't forgot to set options to `Loader`, like in [example](#example)
 
-> This library use [google-maps-js-api-loader](https://github.com/Krombik/google-map-loader) for Google Maps JavaScript API loading, you can import `Loader` if you need to start loading outside of react.
+> You can import `Loader` if you need "silent" loading or loading outside of react.
 
 ---
 
-### useMarkerCluster
+## Service hooks
 
-```ts
-const useMarkerCluster: <T>(
-  points: T[],
-  getLngLat(point: T) => [lng: number, lat: number],
-  options?: UseMarkerClusterOptions
-) => {
-  getPoints<M, C>(
-    markerMapper: MarkerMapper<T, M>,
-    clusterMapper: ClusterMapper<C>,
-    extend?: number
-  )(M | C)[];
-  onBoundsChange(this: google.maps.Map): void;
-  markerCluster: MarkerCluster<T>;
-};
-```
-
-| Name        | Description                                                                                                                                                                                                                                                                                          |
-| :---------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `points`    | pints to clustering                                                                                                                                                                                                                                                                                  |
-| `getLngLat` | same to `getLngLat` param of [marker-cluster constructor](https://github.com/Krombik/marker-cluster#constructor)                                                                                                                                                                                     |
-| `options?`  | same to `options` param of [marker-cluster constructor](https://github.com/Krombik/marker-cluster#constructor), but also includes `asyncMode`, it detects which method to use: [load](https://github.com/Krombik/marker-cluster#load) or [load](https://github.com/Krombik/marker-cluster#loadasync) |
-
-returns
-
-| Name             | Description                                                                                                                                                                                                           |
-| :--------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `onBoundsChange` | method which should be passed to [GoogleMap](#googlemap) `onBoundsChanged` prop, by default not wrapped in any method, but better to wrap it in `throttle` method, to avoid a lot of rerenders during bounds changing |
-| `getPoints`      | method to get points in current zoom and bounds                                                                                                                                                                       |
-| `markerCluster`  | [marker-cluster](https://github.com/Krombik/marker-cluster) instance                                                                                                                                                  |
-
----
-
-### useService
-
-all hooks below implement google maps services, hooks can be called even if `google.maps` is not loaded yet, but methods themselves cannot be import until `google.maps` is loaded
+All hooks below implement google maps services, hooks can be called even if `google.maps` is not loaded yet, but methods themselves cannot be import until `google.maps` is loaded
 
 ```ts
 const { geocode } = useGeocoder(); // throws error if google.maps not loaded yet
@@ -637,6 +528,8 @@ const fn = async () => {
 
 ### useAutocompleteService
 
+[AutocompleteService](https://developers.google.com/maps/documentation/javascript/reference/places-autocomplete-service#AutocompleteService) implementation
+
 ```ts
 const useAutocompleteService: () => google.maps.places.AutocompleteService;
 ```
@@ -644,6 +537,8 @@ const useAutocompleteService: () => google.maps.places.AutocompleteService;
 ---
 
 ### useDirectionService
+
+[DirectionService](https://developers.google.com/maps/documentation/javascript/reference/directions#DirectionsService) implementation
 
 ```ts
 const useDirectionService: () => google.maps.places.DirectionsService;
@@ -653,6 +548,8 @@ const useDirectionService: () => google.maps.places.DirectionsService;
 
 ### useDistanceMatrixService
 
+[DistanceMatrixService](https://developers.google.com/maps/documentation/javascript/reference/distance-matrix#DistanceMatrixService) implementation
+
 ```ts
 const useDistanceMatrixService: () => google.maps.places.DistanceMatrixService;
 ```
@@ -660,6 +557,8 @@ const useDistanceMatrixService: () => google.maps.places.DistanceMatrixService;
 ---
 
 ### useElevationService
+
+[ElevationService](https://developers.google.com/maps/documentation/javascript/reference/elevation#ElevationService) implementation
 
 ```ts
 const useElevationService: () => google.maps.ElevationService;
@@ -669,6 +568,8 @@ const useElevationService: () => google.maps.ElevationService;
 
 ### useGeocoder
 
+[Geocoder](https://developers.google.com/maps/documentation/javascript/reference/geocoder#Geocoder) implementation
+
 ```ts
 const useGeocoder: () => google.maps.Geocoder;
 ```
@@ -677,6 +578,8 @@ const useGeocoder: () => google.maps.Geocoder;
 
 ### useMaxZoomService
 
+[MaxZoomService](https://developers.google.com/maps/documentation/javascript/reference/max-zoom#MaxZoomService) implementation
+
 ```ts
 const useMaxZoomService: () => google.maps.MaxZoomService;
 ```
@@ -684,6 +587,8 @@ const useMaxZoomService: () => google.maps.MaxZoomService;
 ---
 
 ### usePlacesService
+
+[PlacesService](https://developers.google.com/maps/documentation/javascript/reference/places-service#PlacesService) implementation
 
 ```ts
 const usePlacesService: (
@@ -698,6 +603,8 @@ const usePlacesService: (
 ---
 
 ### useStreetViewService
+
+[StreetViewService](https://developers.google.com/maps/documentation/javascript/reference/street-view-service#StreetViewService) implementation
 
 ```ts
 const useStreetViewService: () => google.maps.StreetViewService;

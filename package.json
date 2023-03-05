@@ -1,6 +1,6 @@
 {
   "name": "google-maps-js-api-react",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Library for convenient work of Google Maps JavaScript API with React",
   "author": "Krombik",
   "license": "MIT",
@@ -33,19 +33,26 @@
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
+  },
   "dependencies": {
-    "google-maps-js-api-loader": "^2.2.1",
-    "marker-cluster": "^1.2.1"
+    "google-maps-js-api-loader": "^2.2.1"
   },
   "devDependencies": {
-    "@types/google.maps": "^3.50.2",
-    "@types/react": "^18.0.21",
-    "@types/react-dom": "^18.0.6",
+    "@swc/core": "^1.3.37",
+    "@types/google.maps": "^3.52.1",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
     "cross-env": "^7.0.3",
+    "typedoc": "0.23.26",
     "microbundle": "^0.15.1",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.7.0",
-    "typescript": "^4.8.4"
+    "prettier": "^2.8.4",
+    "tsup": "^6.6.3",
+    "typescript": "^4.9.5"
   },
   "files": [
     "dist",
@@ -56,7 +63,6 @@
     "google",
     "maps",
     "loader",
-    "clustering",
     "Marker",
     "Map",
     "OverlayView",
@@ -67,6 +73,8 @@
     "Circle",
     "Rectangle",
     "DrawingManager",
-    "HeatmapLayer"
-  ]
+    "HeatmapLayer",
+    "GoogleMap"
+  ],
+  "sideEffects": false
 }

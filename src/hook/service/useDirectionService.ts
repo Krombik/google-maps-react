@@ -1,7 +1,8 @@
 import handleUseService from '../../utils/handleUseService';
 
-const useDirectionsService = handleUseService(['DirectionsService'] as const, [
-  'route',
-]);
+const useDirectionsService = handleUseService<google.maps.DirectionsService>(
+  ['DirectionsService'],
+  ['route']
+);
 
 export default useDirectionsService;

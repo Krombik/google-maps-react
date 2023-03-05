@@ -5,8 +5,10 @@ import {
   ReactElement,
   RefAttributes,
   useContext,
+  FC,
+  useRef,
+  useEffect,
 } from 'react';
-import { useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import PanesContext from '../context/PanesContext';
 import useGoogleMap from '../hook/useGoogleMap';
@@ -116,7 +118,7 @@ export type OverlayViewProps = {
   lng: number;
 };
 
-const OverlayView = (props: OverlayViewProps) => {
+const OverlayView: FC<OverlayViewProps> = (props) => {
   const map = useGoogleMap();
 
   const data = useRef<{
@@ -132,6 +134,8 @@ const OverlayView = (props: OverlayViewProps) => {
   const { children } = props;
 
   const outerRef = children.ref;
+
+  const panes = useContext(PanesContext);
 
   useEffect(() => {
     if (data._isNotFirstRender && data._overlay) {
@@ -151,7 +155,9 @@ const OverlayView = (props: OverlayViewProps) => {
 
   const ref = useCallback<RefCallback<HTMLElement>>(
     (el) => {
-      data._overlay?.setMap(null);
+      if (data._overlay) {
+        data._overlay.setMap(null);
+      }
 
       if (el) {
         if (data._el !== el) {
@@ -166,17 +172,13 @@ const OverlayView = (props: OverlayViewProps) => {
           data._overlay = new _OverlayView(el.style, coords, callbacks, map);
         }
       } else {
-        delete data._el;
-
-        delete data._overlay;
+        data._el = data._overlay = undefined;
       }
 
       setRef(outerRef, el);
     },
     [outerRef]
   );
-
-  const panes = useContext(PanesContext);
 
   return panes
     ? createPortal(

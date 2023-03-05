@@ -1,7 +1,8 @@
 import handleUseService from '../../utils/handleUseService';
 
-const useStreetViewService = handleUseService(['StreetViewService'] as const, [
-  'getPanorama',
-]);
+const useStreetViewService = handleUseService<google.maps.StreetViewService>(
+  ['StreetViewService'],
+  ['getPanorama']
+);
 
 export default useStreetViewService;

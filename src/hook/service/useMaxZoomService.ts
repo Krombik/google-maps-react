@@ -1,7 +1,8 @@
 import handleUseService from '../../utils/handleUseService';
 
-const useMaxZoomService = handleUseService(['MaxZoomService'] as const, [
-  'getMaxZoomAtLatLng',
-]);
+const useMaxZoomService = handleUseService<google.maps.MaxZoomService>(
+  ['MaxZoomService'],
+  ['getMaxZoomAtLatLng']
+);
 
 export default useMaxZoomService;

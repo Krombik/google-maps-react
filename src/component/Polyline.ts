@@ -1,11 +1,12 @@
-import { Expand, HandlersMap, PropsMap } from '../types';
-import handleBaseCreator from '../utils/handleBaseCreator';
-import { PolyHandlers } from './types';
+import type { ComponentProps } from 'react';
+import type { PolyHandlers } from '../types';
+import handleComponent from '../utils/handleComponent';
 
-type Handlers = HandlersMap<google.maps.Polyline, PolyHandlers>;
+export type PolylineProps = ComponentProps<typeof Polyline>;
 
-type Props = PropsMap<
+const Polyline = handleComponent<
   google.maps.Polyline,
+  PolyHandlers,
   {
     /**
      * If set to `true`, the user can drag this shape over the map. The {@link google.maps.PolylineOptions.geodesic geodesic} property defines the mode of dragging.
@@ -24,15 +25,6 @@ type Props = PropsMap<
      */
     visible: true;
   }
->;
-
-export type PolylineProps = Expand<Handlers & Props>;
-
-const createPolylineComponent = handleBaseCreator<
-  ['Polyline'],
-  google.maps.PolylineOptions,
-  Handlers,
-  Props
 >(['Polyline']);
 
-export default createPolylineComponent;
+export default Polyline;

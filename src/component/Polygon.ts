@@ -1,11 +1,12 @@
-import { Expand, HandlersMap, PropsMap } from '../types';
-import handleBaseCreator from '../utils/handleBaseCreator';
-import { PolyHandlers } from './types';
+import type { ComponentProps } from 'react';
+import type { PolyHandlers } from '../types';
+import handleComponent from '../utils/handleComponent';
 
-type Handlers = HandlersMap<google.maps.Polygon, PolyHandlers>;
+export type PolygonProps = ComponentProps<typeof Polygon>;
 
-type Props = PropsMap<
+const Polygon = handleComponent<
   google.maps.Polygon,
+  PolyHandlers,
   {
     /**
      * If set to `true`, the user can drag this shape over the map. The {@link google.maps.PolygonOptions.geodesic geodesic} property defines the mode of dragging.
@@ -24,15 +25,6 @@ type Props = PropsMap<
      */
     visible: true;
   }
->;
-
-export type PolygonProps = Expand<Handlers & Props>;
-
-const createPolygonComponent = handleBaseCreator<
-  ['Polygon'],
-  google.maps.PolygonOptions,
-  Handlers,
-  Props
 >(['Polygon']);
 
-export default createPolygonComponent;
+export default Polygon;

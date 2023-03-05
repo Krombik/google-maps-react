@@ -6,8 +6,8 @@ const usePlacesService = (
 ) =>
   useMemo(
     () =>
-      handleService(
-        ['places', 'PlacesService'] as const,
+      handleService<google.maps.places.PlacesService>(
+        ['places', 'PlacesService'],
         [
           'findPlaceFromPhoneNumber',
           'findPlaceFromQuery',

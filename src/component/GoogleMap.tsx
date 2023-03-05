@@ -1,14 +1,25 @@
-import React, { CSSProperties, PropsWithChildren, useState } from 'react';
-import { Expand, GetValue, HandlersMap, PropsMap } from '../types';
-import wrapper from '../utils/wrapper';
+import React, {
+  CSSProperties,
+  ComponentProps,
+  PropsWithChildren,
+  forwardRef,
+  useState,
+} from 'react';
+import type {
+  CombineProps,
+  GetValue,
+  DragEventName,
+  MouseHandlers,
+} from '../types';
 import noop from '../utils/noop';
 import PanesContext from '../context/PanesContext';
 import useConst from '../hook/utils/useConst';
 import setRef from '../utils/setRef';
 import MapContext from '../context/MapContext';
-import { DragEventName, MouseHandlers } from './types';
 
-type Handlers = HandlersMap<
+import useHandlersAndProps from '../hook/utils/useHandlersAndProps';
+
+type Props = CombineProps<
   google.maps.Map,
   {
     onBoundsChanged: [bounds: GetValue<google.maps.Map, 'bounds'>];
@@ -24,11 +35,7 @@ type Handlers = HandlersMap<
     onTilesLoaded: [];
     onTiltChanged: [tilt: GetValue<google.maps.Map, 'tilt'>];
     onZoomChanged: [zoom: GetValue<google.maps.Map, 'zoom'>];
-  } & Omit<MouseHandlers, DragEventName>
->;
-
-type Props = PropsMap<
-  google.maps.Map,
+  } & Omit<MouseHandlers, DragEventName>,
   {
     center: true;
     /**
@@ -52,38 +59,32 @@ type Props = PropsMap<
      */
     zoom: true;
   }
->;
-
-type BaseProps = {
+> & {
   className?: string;
   style?: CSSProperties;
 };
 
-export type GoogleMapProps = Expand<Handlers & Props & BaseProps>;
+export type GoogleMapProps = ComponentProps<typeof GoogleMap>;
 
-const createGoogleMapComponent = wrapper<
-  google.maps.Map,
-  google.maps.MapOptions,
-  Handlers,
-  Props,
-  PropsWithChildren<BaseProps>
->(
-  (useHandlersAndProps) => (props, ref) => {
+const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
+  (props, ref) => {
     const [panes, setPanes] = useState<google.maps.MapPanes>();
 
-    const { _map, _divRef } = useConst(() => {
-      const div = document.createElement('div');
+    const { children } = props;
 
-      div.style.width = div.style.height = '100%';
+    const data = useConst(() => {
+      const t = new google.maps.OverlayView();
+
+      const div = document.createElement('div');
 
       const _map = new google.maps.Map(div, {
         ...props.defaultOptions,
         ...props,
       });
 
-      setRef(ref, _map);
+      div.style.width = div.style.height = '100%';
 
-      const t = new google.maps.OverlayView();
+      setRef(ref, _map);
 
       t.onRemove = t.draw = noop;
 
@@ -107,14 +108,24 @@ const createGoogleMapComponent = wrapper<
       };
     });
 
-    useHandlersAndProps(_map, props);
-
-    const { children } = props;
+    useHandlersAndProps(
+      data._map,
+      props,
+      {
+        onCenterChanged: 'center',
+        onHeadingChanged: 'heading',
+        onMapTypeIdChanged: 'mapTypeId',
+        onTiltChanged: 'tilt',
+        onZoomChanged: 'zoom',
+        onBoundsChanged: 'bounds',
+      },
+      ['className', 'style', 'children', 'defaultOptions']
+    );
 
     return (
-      <div ref={_divRef} className={props.className} style={props.style}>
+      <div ref={data._divRef} className={props.className} style={props.style}>
         {children && (
-          <MapContext.Provider value={_map}>
+          <MapContext.Provider value={data._map}>
             <PanesContext.Provider value={panes}>
               {children}
             </PanesContext.Provider>
@@ -122,15 +133,7 @@ const createGoogleMapComponent = wrapper<
         )}
       </div>
     );
-  },
-  {
-    onCenterChanged: 'center',
-    onHeadingChanged: 'heading',
-    onMapTypeIdChanged: 'mapTypeId',
-    onTiltChanged: 'tilt',
-    onZoomChanged: 'zoom',
-    onBoundsChanged: 'bounds',
   }
 );
 
-export default createGoogleMapComponent;
+export default GoogleMap;

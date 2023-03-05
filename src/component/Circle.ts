@@ -1,17 +1,15 @@
-import { Expand, GetValue, HandlersMap, PropsMap } from '../types';
-import handleBaseCreator from '../utils/handleBaseCreator';
-import { MouseHandlers } from './types';
+import type { ComponentProps } from 'react';
+import type { GetValue, MouseHandlers } from '../types';
+import handleComponent from '../utils/handleComponent';
 
-type Handlers = HandlersMap<
+export type CircleProps = ComponentProps<typeof Circle>;
+
+const Circle = handleComponent<
   google.maps.Circle,
   {
     onCenterChange: [center: GetValue<google.maps.Circle, 'center'>];
     onRadiusChange: [radius: GetValue<google.maps.Circle, 'radius'>];
-  } & MouseHandlers
->;
-
-type Props = PropsMap<
-  google.maps.Circle,
+  } & MouseHandlers,
   {
     /**
      * The center of the Circle.
@@ -34,15 +32,9 @@ type Props = PropsMap<
      */
     visible: true;
   }
->;
+>(['Circle'], {
+  onCenterChange: 'center',
+  onRadiusChange: 'radius',
+});
 
-export type CircleProps = Expand<Handlers & Props>;
-
-const createCircleComponent = handleBaseCreator<
-  ['Circle'],
-  google.maps.CircleOptions,
-  Handlers,
-  Props
->(['Circle'], { onCenterChange: 'center', onRadiusChange: 'radius' });
-
-export default createCircleComponent;
+export default Circle;

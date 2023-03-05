@@ -1,16 +1,14 @@
-import { Expand, GetValue, HandlersMap, PropsMap } from '../types';
-import handleBaseCreator from '../utils/handleBaseCreator';
-import { MouseHandlers } from './types';
+import type { ComponentProps } from 'react';
+import type { GetValue, MouseHandlers } from '../types';
+import handleComponent from '../utils/handleComponent';
 
-type Handlers = HandlersMap<
+export type RectangleProps = ComponentProps<typeof Rectangle>;
+
+const Rectangle = handleComponent<
   google.maps.Rectangle,
   {
     onBoundsChange: [bounds: GetValue<google.maps.Rectangle, 'bounds'>];
-  } & MouseHandlers
->;
-
-type Props = PropsMap<
-  google.maps.Rectangle,
+  } & MouseHandlers,
   {
     bounds: true;
     /**
@@ -26,15 +24,6 @@ type Props = PropsMap<
      */
     visible: true;
   }
->;
-
-export type RectangleProps = Expand<Handlers & Props>;
-
-const createRectangleComponent = handleBaseCreator<
-  ['Rectangle'],
-  google.maps.RectangleOptions,
-  Handlers,
-  Props
 >(['Rectangle'], { onBoundsChange: 'bounds' });
 
-export default createRectangleComponent;
+export default Rectangle;
