@@ -7,11 +7,11 @@ import {
   PossibleHandlers,
   PossibleProps,
 } from '../types';
-import useGoogleMap from '../hook/useGoogleMap';
-import useConst from '../hook/utils/useConst';
+import useGoogleMap from '../hooks/useGoogleMap';
+import useConst from './useConst';
 import setRef from './setRef';
 import getFromGoogleMap from './getFromGoogleMap';
-import useHandlersAndProps from '../hook/utils/useHandlersAndProps';
+import useHandlersAndProps from './useHandlersAndProps';
 
 type MapChild = TypicalInstance & {
   setMap(map: google.maps.Map | null): void;

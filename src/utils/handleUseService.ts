@@ -1,5 +1,5 @@
 import handleService from './handleService';
-import useConst from '../hook/utils/useConst';
+import useConst from './useConst';
 import type { PathTo } from '../types';
 
 /** @internal */

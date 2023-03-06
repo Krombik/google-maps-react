@@ -1,13 +1,14 @@
-import { FC, PropsWithChildren, useRef, VFC } from 'react';
 import {
-  GoogleMap,
-  OverlayView,
   LoaderStatus,
   Loader,
+  GoogleMap,
   Marker,
-  useGoogleMapLoader,
-  Polygon,
 } from 'google-maps-js-api-react';
+
+import OverlayView from 'google-maps-js-api-react/components/OverlayView';
+import useGoogleMapLoader from 'google-maps-js-api-react/hooks/useGoogleMapLoader';
+import { FC, PropsWithChildren, useRef, VFC } from 'react';
+
 import { useState } from 'react';
 
 Loader.setOptions({

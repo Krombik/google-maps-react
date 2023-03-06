@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "dist",
+    "outDir": "build",
     "module": "esnext",
     "target": "es6",
     "lib": ["dom", "esnext"],
@@ -17,8 +17,9 @@
     "noUnusedParameters": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "stripInternal": true
+    "stripInternal": true,
+    "types": ["node", "google.maps"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "example"]
+  "include": ["src", "scripts"],
+  "exclude": ["node_modules", "dist", "build", "example"]
 }

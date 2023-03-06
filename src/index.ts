@@ -1,59 +1,59 @@
-export { default as Circle } from './component/Circle';
+export { default as Circle } from './components/Circle';
 
-export { default as DrawingManager } from './component/DrawingManager';
+export { default as DrawingManager } from './components/DrawingManager';
 
-export { default as GoogleMap } from './component/GoogleMap';
+export { default as GoogleMap } from './components/GoogleMap';
 
-export { default as HeatmapLayer } from './component/HeatmapLayer';
+export { default as HeatmapLayer } from './components/HeatmapLayer';
 
-export { default as Marker } from './component/Marker';
+export { default as Marker } from './components/Marker';
 
-export { default as Polygon } from './component/Polygon';
+export { default as Polygon } from './components/Polygon';
 
-export { default as Polyline } from './component/Polyline';
+export { default as Polyline } from './components/Polyline';
 
-export { default as Rectangle } from './component/Rectangle';
+export { default as Rectangle } from './components/Rectangle';
 
-export { default as OverlayView } from './component/OverlayView';
+export { default as OverlayView } from './components/OverlayView';
 
-export { default as useGoogleMap } from './hook/useGoogleMap';
+export { default as useGoogleMap } from './hooks/useGoogleMap';
 
-export { default as useGoogleMapLoader } from './hook/useGoogleMapLoader';
+export { default as useGoogleMapLoader } from './hooks/useGoogleMapLoader';
 
-export { default as useAutocompleteService } from './hook/service/useAutocompleteService';
+export { default as useAutocompleteService } from './hooks/service/useAutocompleteService';
 
-export { default as useDirectionService } from './hook/service/useDirectionService';
+export { default as useDirectionService } from './hooks/service/useDirectionService';
 
-export { default as useDistanceMatrixService } from './hook/service/useDistanceMatrixService';
+export { default as useDistanceMatrixService } from './hooks/service/useDistanceMatrixService';
 
-export { default as useElevationService } from './hook/service/useElevationService';
+export { default as useElevationService } from './hooks/service/useElevationService';
 
-export { default as useGeocoder } from './hook/service/useGeocoder';
+export { default as useGeocoder } from './hooks/service/useGeocoder';
 
-export { default as useMaxZoomService } from './hook/service/useMaxZoomService';
+export { default as useMaxZoomService } from './hooks/service/useMaxZoomService';
 
-export { default as usePlacesService } from './hook/service/usePlacesService';
+export { default as usePlacesService } from './hooks/service/usePlacesService';
 
-export { default as useStreetViewService } from './hook/service/useStreetViewService';
+export { default as useStreetViewService } from './hooks/service/useStreetViewService';
 
 export { default as Loader, LoaderStatus } from 'google-maps-js-api-loader';
 
-export type { CircleProps } from './component/Circle';
+export type { CircleProps } from './components/Circle';
 
-export type { DrawingManagerProps } from './component/DrawingManager';
+export type { DrawingManagerProps } from './components/DrawingManager';
 
-export type { GoogleMapProps } from './component/GoogleMap';
+export type { GoogleMapProps } from './components/GoogleMap';
 
-export type { HeatmapLayerProps } from './component/HeatmapLayer';
+export type { HeatmapLayerProps } from './components/HeatmapLayer';
 
-export type { MarkerProps } from './component/Marker';
+export type { MarkerProps } from './components/Marker';
 
-export type { PolygonProps } from './component/Polygon';
+export type { PolygonProps } from './components/Polygon';
 
-export type { PolylineProps } from './component/Polyline';
+export type { PolylineProps } from './components/Polyline';
 
-export type { RectangleProps } from './component/Rectangle';
+export type { RectangleProps } from './components/Rectangle';
 
-export type { OverlayViewProps } from './component/OverlayView';
+export type { OverlayViewProps } from './components/OverlayView';
 
 export type { LoaderOptions } from 'google-maps-js-api-loader';
