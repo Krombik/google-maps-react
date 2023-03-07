@@ -2,7 +2,7 @@
 
 > Note: This library requires React v16.8 or later.
 
-Library for convenient work of Google Maps JavaScript API with React
+The package provides a simple and efficient way to work with the Google Maps API, enabling map-based applications to be built with ease. With minimal setup, Google Maps functionality can be integrated into React applications using the components and hooks provided by the package. The package is designed to be fast, lightweight, and tree-shakeable, providing a performant solution for integrating Google Maps into React applications.
 
 ## Example
 
@@ -49,7 +49,7 @@ const Map = () => {
 };
 ```
 
-> **This library does not attempt to implement "controlled" React logic**, for example:
+> **This library is not designed to implement "controlled" React logic.** For instance, consider the following example:
 >
 > ```jsx
 > const Map = () => {
@@ -59,7 +59,7 @@ const Map = () => {
 > };
 > ```
 >
-> the map zoom level is not bound to `5` and can be changed by the user, but if the `zoom` variable is changed, the map zoom level will also be changed.
+> Here, the zoom level of the map is not limited to `5` and can be modified by the user. However, if the value of the zoom variable is changed, the zoom level of the map will also be modified accordingly.
 
 ## API
 
@@ -76,7 +76,6 @@ const Map = () => {
 - [Hooks](#hooks)
   - [useGoogleMap](#usegooglemap)
   - [useGoogleMapLoader](#usegooglemaploader)
-  - [useMarkerCluster](#usemarkercluster)
   - [Service hooks](#service-hooks)
     - [useAutocompleteService](#useautocompleteservice)
     - [useDirectionService](#usedirectionservice)
@@ -504,7 +503,7 @@ const useGoogleMapLoader: (options?: Options) => LoaderStatus;
 
 Hook for google maps script loading
 
-> Note: don't forgot to set options to `Loader`, like in [example](#example)
+> Don't forgot to set options to `Loader`, like in [example](#example)
 
 > You can import `Loader` if you need "silent" loading or loading outside of react.
 

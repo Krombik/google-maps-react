@@ -1,7 +1,7 @@
 {
   "name": "google-maps-js-api-react",
   "version": "3.0.0",
-  "description": "Library for convenient work of Google Maps JavaScript API with React",
+  "description": "Fast, tree-shakable, and light-weight React components and hooks for integrating Google Maps API functionality",
   "author": "Krombik",
   "license": "MIT",
   "repository": {
