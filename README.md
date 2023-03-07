@@ -22,7 +22,7 @@ Loader.setOptions({ apiKey: API_KEY, defer: true });
 const Map = () => {
   const status = useGoogleMapLoader();
 
-  const handleClick = useCallback(() => console.log('clicked', []));
+  const handleClick = useCallback(() => console.log('clicked'), []);
 
   if (status === LoaderStatus.LOADED) {
     return (

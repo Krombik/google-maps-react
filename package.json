@@ -18,8 +18,7 @@
     "node": ">=10"
   },
   "scripts": {
-    "build": "ts-node --esm ./scripts/build.ts",
-    "start": "microbundle --jsx React.createElement watch"
+    "build": "ts-node ./scripts/build.mts"
   },
   "peerDependencies": {
     "react": ">=16.8.0",

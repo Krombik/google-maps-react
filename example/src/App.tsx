@@ -3,10 +3,10 @@ import {
   Loader,
   GoogleMap,
   Marker,
+  OverlayView,
+  useGoogleMapLoader,
 } from 'google-maps-js-api-react';
 
-import OverlayView from 'google-maps-js-api-react/components/OverlayView';
-import useGoogleMapLoader from 'google-maps-js-api-react/hooks/useGoogleMapLoader';
 import { FC, PropsWithChildren, useRef, VFC } from 'react';
 
 import { useState } from 'react';
