@@ -12,19 +12,19 @@ import {
   GoogleMap,
   Marker,
   OverlayView,
-  LoaderStatus,
-  Loader,
+  GoogleMapsLoaderStatus,
+  GoogleMapsLoader,
 } from 'google-maps-js-api-react';
 import { useCallback } from 'react';
 
-Loader.setOptions({ apiKey: API_KEY, defer: true });
+GoogleMapsLoader.setOptions({ apiKey: API_KEY, defer: true });
 
 const Map = () => {
   const status = useGoogleMapLoader();
 
   const handleClick = useCallback(() => console.log('clicked'), []);
 
-  if (status === LoaderStatus.LOADED) {
+  if (status === GoogleMapsLoaderStatus.LOADED) {
     return (
       <GoogleMap
         defaultOptions={{
@@ -49,7 +49,7 @@ const Map = () => {
 };
 ```
 
-> **This library is not designed to implement "controlled" React logic.** For instance, consider the following example:
+> **All components (except [OverlayView](#overlayview)) is not designed to implement "controlled" React logic.** For instance, consider the following example:
 >
 > ```jsx
 > const Map = () => {
@@ -76,6 +76,7 @@ const Map = () => {
 - [Hooks](#hooks)
   - [useGoogleMap](#usegooglemap)
   - [useGoogleMapLoader](#usegooglemaploader)
+  - [useMarkerCluster](#usemarkercluster)
   - [Service hooks](#service-hooks)
     - [useAutocompleteService](#useautocompleteservice)
     - [useDirectionService](#usedirectionservice)
@@ -484,7 +485,7 @@ Context of [GoogleMap](#googlemap) component
 ### useGoogleMapLoader
 
 ```ts
-enum LoaderStatus {
+enum GoogleMapsLoaderStatus {
   NONE = 0,
   LOADING = 1,
   LOADED = 2,
@@ -496,16 +497,22 @@ type Options = {
   onError?(err: ErrorEvent | Error): void;
 };
 
-const useGoogleMapLoader: (options?: Options) => LoaderStatus;
+const useGoogleMapsLoader: (options?: Options) => GoogleMapsLoaderStatus;
 ```
 
 [google-maps-js-api-loader](https://github.com/Krombik/google-map-loader) implementation
 
 Hook for google maps script loading
 
-> Don't forgot to set options to `Loader`, like in [example](#example)
+> Don't forgot to set options to `GoogleMapsLoader`, like in [example](#example)
 
-> You can import `Loader` if you need "silent" loading or loading outside of react.
+> You can import `GoogleMapsLoader` if you need "silent" loading or loading outside of react.
+
+---
+
+### useMarkerCluster
+
+This hook has been moved to [use-marker-cluster](https://www.npmjs.com/package/use-marker-cluster) library
 
 ---
 

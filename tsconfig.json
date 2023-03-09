@@ -25,5 +25,5 @@
     "files": true
   },
   "include": ["src", "scripts"],
-  "exclude": ["node_modules", "dist", "build", "example"]
+  "exclude": ["node_modules", "build", "example"]
 }

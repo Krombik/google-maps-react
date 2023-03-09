@@ -5569,6 +5569,11 @@ makeerror@1.0.12:
   dependencies:
     tmpl "1.0.5"
 
+marker-cluster@^2.0.7:
+  version "2.0.7"
+  resolved "https://registry.yarnpkg.com/marker-cluster/-/marker-cluster-2.0.7.tgz#25ec6753b8d473afe21d90be77972f8f4d5b570c"
+  integrity sha512-Bmo4FAxX1zWvjIpg1Go/zB6XHmM1yn5XJR4D2VgsmohQTo/cjjbVSOmGmwIAZdeVAGzXp7lHZpTPE70JDJr3Ng==
+
 mdn-data@2.0.14:
   version "2.0.14"
   resolved "https://registry.yarnpkg.com/mdn-data/-/mdn-data-2.0.14.tgz#7113fc4281917d63ce29b43446f701e68c25ba50"
@@ -7984,6 +7989,10 @@ uri-js@^4.2.2:
   integrity sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==
   dependencies:
     punycode "^2.1.0"
+
+"use-marker-cluster@link:../../use-marker-cluster/build":
+  version "0.0.0"
+  uid ""
 
 util-deprecate@^1.0.1, util-deprecate@^1.0.2, util-deprecate@~1.0.1:
   version "1.0.2"
