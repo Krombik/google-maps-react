@@ -1,7 +1,7 @@
 {
   "name": "google-maps-js-api-react",
-  "version": "2.0.0",
-  "description": "Library for convenient work of Google Maps JavaScript API with React",
+  "version": "3.0.0",
+  "description": "Fast, tree-shakable, and light-weight React components and hooks for integrating Google Maps API functionality",
   "author": "Krombik",
   "license": "MIT",
   "repository": {
@@ -14,49 +14,41 @@
   "homepage": "https://github.com/Krombik/google-maps-react#readme",
   "type": "module",
   "source": "src/index.ts",
-  "exports": {
-    "require": "./dist/index.cjs",
-    "default": "./dist/index.modern.js"
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.module.js",
-  "types": "./dist/index.d.ts",
-  "unpkg": "./dist/index.umd.js",
   "engines": {
     "node": ">=10"
   },
   "scripts": {
-    "build": "microbundle --jsx React.createElement",
-    "start": "microbundle --jsx React.createElement watch"
+    "build": "ts-node ./scripts/build.mts"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react-dom": ">=16.8.0",
+    "@types/google.maps": ">=3.0.0",
+    "@types/react": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    }
   },
   "dependencies": {
-    "google-maps-js-api-loader": "^2.2.1",
-    "marker-cluster": "^1.2.1"
+    "google-maps-js-api-loader": "^2.3.0"
   },
   "devDependencies": {
-    "@types/google.maps": "^3.50.2",
-    "@types/react": "^18.0.21",
-    "@types/react-dom": "^18.0.6",
-    "cross-env": "^7.0.3",
-    "microbundle": "^0.15.1",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^2.7.0",
-    "typescript": "^4.8.4"
+    "@types/google.maps": "^3.52.1",
+    "@types/node": "^18.14.6",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "prettier": "^2.8.4",
+    "ts-node": "^10.9.1",
+    "tsup": "^6.6.3",
+    "typescript": "^4.9.5"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
   "keywords": [
     "react",
     "google",
     "maps",
     "loader",
-    "clustering",
     "Marker",
     "Map",
     "OverlayView",
@@ -67,6 +59,8 @@
     "Circle",
     "Rectangle",
     "DrawingManager",
-    "HeatmapLayer"
-  ]
+    "HeatmapLayer",
+    "GoogleMap"
+  ],
+  "sideEffects": false
 }

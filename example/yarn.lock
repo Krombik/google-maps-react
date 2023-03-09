@@ -4247,12 +4247,12 @@ globby@^11.0.1, globby@^11.0.4:
     merge2 "^1.4.1"
     slash "^3.0.0"
 
-google-maps-js-api-loader@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/google-maps-js-api-loader/-/google-maps-js-api-loader-2.1.0.tgz#f5f883724972a556f0059cbbfae4c6c6a34a5d41"
-  integrity sha512-srRpho8/cN441EwPPob+evtrs55zeMSqRnjpt0pGdfDX87SgqozIrdOgcfqBh2PNwh9J6XCKByWBU63b96t+xA==
+google-maps-js-api-loader@^2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/google-maps-js-api-loader/-/google-maps-js-api-loader-2.2.1.tgz#02e61a8c203a9a5f4c638e0ea5a0a984fc577fdd"
+  integrity sha512-oFdp2QhMpU6/BTxcxFl8qr5iTD9lid+Fm+gxxnWkRuIFuf1MtGecN54TpujZdGkchFU6xIhrKgZBnM8LpO5QFw==
 
-"google-maps-js-api-react@link:..":
+"google-maps-js-api-react@link:../build":
   version "0.0.0"
   uid ""
 
@@ -5569,10 +5569,10 @@ makeerror@1.0.12:
   dependencies:
     tmpl "1.0.5"
 
-marker-cluster@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/marker-cluster/-/marker-cluster-1.2.1.tgz#4b8b4dcdfecdedaf202a554fd7fc0b0d05fcf85d"
-  integrity sha512-kb+x+FyaB2bQNnBawq8Cvu6j7jPfFPSXdqWjts11S/J8IRMOhGuXYT/uPv1E63jAwWIn926arSg64ql03t8Tyg==
+marker-cluster@^2.0.7:
+  version "2.0.7"
+  resolved "https://registry.yarnpkg.com/marker-cluster/-/marker-cluster-2.0.7.tgz#25ec6753b8d473afe21d90be77972f8f4d5b570c"
+  integrity sha512-Bmo4FAxX1zWvjIpg1Go/zB6XHmM1yn5XJR4D2VgsmohQTo/cjjbVSOmGmwIAZdeVAGzXp7lHZpTPE70JDJr3Ng==
 
 mdn-data@2.0.14:
   version "2.0.14"
@@ -7989,6 +7989,10 @@ uri-js@^4.2.2:
   integrity sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==
   dependencies:
     punycode "^2.1.0"
+
+"use-marker-cluster@link:../../use-marker-cluster/build":
+  version "0.0.0"
+  uid ""
 
 util-deprecate@^1.0.1, util-deprecate@^1.0.2, util-deprecate@~1.0.1:
   version "1.0.2"

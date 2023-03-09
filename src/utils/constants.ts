@@ -1,3 +1,4 @@
+/** @internal */
 export const handlersMap = {
   // Mouse
   onClick: 'click',
@@ -52,4 +53,5 @@ export const handlersMap = {
   onRectangleComplete: 'rectanglecomplete',
 } as const;
 
+/** @internal */
 export type HandlerName = keyof typeof handlersMap;
