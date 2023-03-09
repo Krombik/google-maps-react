@@ -1,7 +1,7 @@
 import { createContext } from 'react';
 
-const PanesContext = createContext<google.maps.MapPanes | undefined>(
-  null as any
-);
+/** @internal */
+const PanesContext = createContext<google.maps.MapPanes | null>(null);
 
+/** @internal */
 export default PanesContext;

@@ -1,29 +1,23 @@
-import { FC, PropsWithChildren, useEffect, useRef, VFC } from 'react';
 import {
-  createGoogleMapComponent,
-  useMarkerCluster,
-  OverlayView,
   LoaderStatus,
   Loader,
-  createMarkerComponent,
+  GoogleMap,
+  Marker,
+  OverlayView,
   useGoogleMapLoader,
-  createPolygonComponent,
-  useGeocoder,
-  useAutocompleteService,
-  GoogleMapProps,
 } from 'google-maps-js-api-react';
+
+import { useRef, VFC } from 'react';
+
 import { useState } from 'react';
+import useMarkerCluster from 'use-marker-cluster';
 
 Loader.setOptions({
   apiKey: '',
   libraries: ['places', 'geometry'],
 });
 
-const GoogleMap = createGoogleMapComponent(['onBoundsChanged'], []);
-
-const Polygon = createPolygonComponent([], ['paths']);
-
-const style = { height: '100vh', width: '100vw' };
+const mapStyle = { height: '100vh', width: '100vw' };
 
 const round = (a: number, b: number) => {
   const c = 10 ** b;
@@ -62,17 +56,17 @@ const locations = [
   { lat: -43.999792, lng: 170.463352 },
 ];
 
-const randomLocations = Array.from({ length: 10000 }, (_, index) => ({
+const randomLocations = Array.from({ length: 100000 }, (_, index) => ({
   id: index,
   ...getRandomLocation(),
 }));
 
-randomLocations.push(
-  { lat: -42.735258, lng: 147.438, id: randomLocations.length },
-  { lat: -42.735258, lng: 147.438, id: randomLocations.length + 1 }
-);
+// randomLocations.push(
+//   { lat: -42.735258, lng: 147.438, id: randomLocations.length },
+//   { lat: -42.735258, lng: 147.438, id: randomLocations.length + 1 }
+// );
 
-const kek = {
+const markerStyle = {
   padding: '5px',
   background: 'white',
   borderRadius: '50%',
@@ -80,82 +74,87 @@ const kek = {
   transform: 'translate(-50%,-50%)',
 };
 
-export const pair = (a: number, b: number) => {
-  const sum = a + b;
-
-  return (sum * (sum + 1)) / 2 + b;
-};
-
-const Kek: FC<PropsWithChildren<google.maps.LatLngLiteral>> = ({
-  lat,
-  lng,
-  children,
-}) => {
-  const ref = useRef<HTMLDivElement>(null);
-
-  // useEffect(() => console.log(ref.current), []);
-
-  return (
-    <OverlayView lat={lat} lng={lng} preventMapHitsAndGestures>
-      <div ref={ref} style={kek}>
-        {children}
-      </div>
-    </OverlayView>
-  );
-};
-
-const CGoogleMap = ({
-  points,
-}: {
+const CGoogleMap = (p: {
   points: { lat: number; lng: number; id: number }[];
 }) => {
   const status = useGoogleMapLoader();
 
-  const { getPoints, onBoundsChange } = useMarkerCluster(
-    points,
-    (v) => [v.lng, v.lat],
-    {
-      radius: 75,
-      asyncMode: true,
-    }
-  );
+  const [points, setPoints] = useState(randomLocations);
 
-  const [isOpen, setOpen] = useState(true);
+  const markerCluster = useMarkerCluster(points, (v) => [v.lng, v.lat], {
+    asyncMode: true,
+  });
 
-  if (status === LoaderStatus.LOADED && isOpen)
+  const [zoom, setZoom] = useState(5);
+
+  const mapRef = useRef<google.maps.Map>(null);
+
+  if (status === LoaderStatus.LOADED)
     return (
       <>
-        <button onClick={() => setOpen((prev) => !prev)}>kek</button>
-        <GoogleMap
-          style={style}
-          defaultOptions={{ center: locations[0], zoom: 5, scrollwheel: true }}
-          onBoundsChanged={onBoundsChange}
+        <button
+          onClick={() => {
+            // setPoints(
+            //   Array.from({ length: 10000 }, (_, index) => ({
+            //     id: index,
+            //     ...getRandomLocation(),
+            //   }))
+            // );
+
+            setZoom(10);
+          }}
         >
-          {getPoints(
-            (_, lng, lat) => {
-              return (
-                <Kek key={pair(lat, lng)} lat={lat} lng={lng}>
-                  d
-                </Kek>
-              );
-            },
-            (lng, lat, count, id) => {
-              return (
-                <Kek key={id} lat={lat} lng={lng}>
+          kek
+        </button>
+        <GoogleMap
+          style={mapStyle}
+          defaultOptions={{ scrollwheel: true }}
+          onBoundsChanged={function (bounds) {
+            const sw = bounds.getSouthWest();
+            const ne = bounds.getNorthEast();
+
+            markerCluster
+              .setZoom(this.getZoom()!)
+              .setBounds(sw.lng(), sw.lat(), ne.lng(), ne.lat())
+              .callback();
+          }}
+          center={locations[0]}
+          zoom={zoom}
+          ref={mapRef}
+        >
+          {markerCluster.getPoints(
+            ({ lat, lng, id }, key) => (
+              <OverlayView
+                lat={lat}
+                lng={lng}
+                key={key}
+                preventMapHitsAndGestures
+              >
+                <div style={markerStyle}>m{id}</div>
+              </OverlayView>
+            ),
+            (lng, lat, count, expandZoom, key) => (
+              <OverlayView
+                lat={lat}
+                lng={lng}
+                key={key}
+                preventMapHitsAndGestures
+              >
+                <div
+                  style={markerStyle}
+                  onClick={() => {
+                    const map = mapRef.current!;
+
+                    map.panTo({ lat, lng });
+
+                    map.setZoom(expandZoom);
+                  }}
+                >
                   {count}
-                </Kek>
-              );
-            },
-            10
+                </div>
+              </OverlayView>
+            )
           )}
-          <Polygon
-            paths={[
-              { lat: 25.774, lng: -80.19 },
-              { lat: 18.466, lng: -66.118 },
-              { lat: 32.321, lng: -64.757 },
-              { lat: 25.774, lng: -80.19 },
-            ]}
-          />
         </GoogleMap>
       </>
     );
@@ -165,18 +164,20 @@ const CGoogleMap = ({
 
 // const GoogleMap = createGoogleMapComponent([], []);
 
-const Marker = createMarkerComponent(['onClick'], ['position']);
-
 const Map = () => {
   const status = useGoogleMapLoader();
 
   if (status === LoaderStatus.LOADED)
     return (
       <GoogleMap
-        style={style}
+        style={mapStyle}
+        zoom={6}
         defaultOptions={{
           center: { lat: -31.56391, lng: 147.154312 },
           zoom: 6,
+        }}
+        onZoomChanged={function () {
+          this.setZoom(6);
         }}
       >
         <Marker

@@ -1,17 +1,15 @@
 import handleService from './handleService';
-import useConst from '../hook/utils/useConst';
-import { ExtendsOrNever } from '../types';
-import { GetFromGoogleMap } from './getFromGoogleMap';
+import useConst from './useConst';
+import type { PathTo } from '../types';
 
+/** @internal */
 const handleUseService =
-  <Path extends ReadonlyArray<string>>(
-    path: Path,
-    keys: (keyof ExtendsOrNever<
-      InstanceType<GetFromGoogleMap<Path>>,
-      Record<string, any>
-    >)[]
+  <Instance extends Record<keyof Instance, (...args: any[]) => any>>(
+    path: PathTo<Instance>,
+    keys: Array<keyof Instance>
   ) =>
   () =>
     useConst(() => handleService(path, keys));
 
+/** @internal */
 export default handleUseService;

@@ -1,22 +1,15 @@
-import { ClassType, ExtendsOrNever } from '../types';
-import getFromGoogleMap, { GetFromGoogleMap } from './getFromGoogleMap';
+import { ClassType, PathTo } from '../types';
+import getFromGoogleMap from './getFromGoogleMap';
 import isFunction from './isFunction';
 
-type AnyService = Record<string, any>;
-
-const handleService = <Path extends ReadonlyArray<string>>(
-  path: Path,
-  keys: (keyof ExtendsOrNever<
-    InstanceType<GetFromGoogleMap<Path>>,
-    AnyService
-  >)[],
+/** @internal */
+const handleService = <
+  Instance extends Record<keyof Instance, (...args: any[]) => any>
+>(
+  path: PathTo<Instance>,
+  keys: Array<keyof Instance>,
   arg?: any
 ) => {
-  type Instance = ExtendsOrNever<
-    InstanceType<GetFromGoogleMap<Path>>,
-    AnyService
-  >;
-
   let service: Instance;
 
   const self = {} as Instance;
@@ -45,4 +38,5 @@ const handleService = <Path extends ReadonlyArray<string>>(
   return self;
 };
 
+/** @internal */
 export default handleService;
