@@ -3,7 +3,6 @@ import React, {
   ComponentProps,
   PropsWithChildren,
   forwardRef,
-  useState,
 } from 'react';
 import type {
   CombineProps,
@@ -11,12 +10,11 @@ import type {
   DragEventName,
   MouseHandlers,
 } from '../../types';
-import noop from '../../utils/noop';
-import PanesContext from '../../context/PanesContext';
 import useConst from '../../utils/useConst';
 import setRef from '../../utils/setRef';
 import MapContext from '../../context/MapContext';
 import useHandlersAndProps from '../../utils/useHandlersAndProps';
+import PanesProvider from '../../providers/PanesProvider';
 
 type Props = CombineProps<
   google.maps.Map,
@@ -67,48 +65,36 @@ export type GoogleMapProps = ComponentProps<typeof GoogleMap>;
 
 const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
   (props, ref) => {
-    const [panes, setPanes] = useState<google.maps.MapPanes | null>(null);
-
     const { children } = props;
 
     const data = useConst(() => {
-      const t = new google.maps.OverlayView();
-
       const div = document.createElement('div');
 
-      const _map = new google.maps.Map(div, {
+      const map = new google.maps.Map(div, {
         ...props.defaultOptions,
         ...props,
       });
 
       div.style.width = div.style.height = '100%';
 
-      setRef(ref, _map);
+      setRef(ref, map);
 
-      t.onRemove = t.draw = noop;
-
-      t.onAdd = () => {
-        setPanes(t.getPanes()!);
-
-        t.setMap(null);
-      };
-
-      t.setMap(_map);
-
-      return {
-        _map,
-        _divRef(el: HTMLDivElement | null) {
+      return [
+        map,
+        (el: HTMLDivElement | null) => {
           if (el) {
             el.prepend(div);
           } else {
             setRef(ref, el);
           }
         },
-      };
+      ] as const;
     });
 
+    const map = data[0];
+
     useHandlersAndProps(
-      data._map,
+      map,
       props,
       {
         onCenterChanged: 'center',
@@ -122,12 +108,10 @@ const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
     );
 
     return (
-      <div ref={data._divRef} className={props.className} style={props.style}>
+      <div ref={data[1]} className={props.className} style={props.style}>
         {children && (
-          <MapContext.Provider value={data._map}>
-            <PanesContext.Provider value={panes}>
-              {children}
-            </PanesContext.Provider>
+          <MapContext.Provider value={map}>
+            <PanesProvider map={map}>{children}</PanesProvider>
           </MapContext.Provider>
         )}
       </div>

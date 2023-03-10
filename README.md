@@ -1,8 +1,24 @@
 # google-maps-js-api-react
 
-> Note: This library requires React v16.8 or later.
+> This library requires React v16.8 or later.
 
-The package provides a simple and efficient way to work with the Google Maps API, enabling map-based applications to be built with ease. With minimal setup, Google Maps functionality can be integrated into React applications using the components and hooks provided by the package. The package is designed to be fast, lightweight, and tree-shakeable, providing a performant solution for integrating Google Maps into React applications.
+This package provides a simple and efficient way to work with the Google Maps API, enabling map-based applications to be built with ease. With minimal setup, Google Maps functionality can be integrated into React applications using the components and hooks provided by this package. The package is designed to be fast, lightweight, and tree-shakeable, providing a performant solution for integrating Google Maps into React applications.
+
+## Installation
+
+using npm:
+
+```
+npm install --save google-maps-js-api-react && npm install --save-dev @types/google.maps
+```
+
+or yarn:
+
+```
+yarn add google-maps-js-api-react && yarn add @types/google.maps --dev
+```
+
+---
 
 ## Example
 
@@ -147,9 +163,6 @@ const GoogleMap: React.ForwardRefExoticComponent<
 ```ts
 type OverlayViewProps = {
   mapPaneLayer?: keyof google.maps.MapPanes;
-  onAdd?(): void;
-  onDraw?(x: number, y: number): void;
-  onRemove?(): void;
   preventMapHitsAndGestures?: boolean;
   preventMapHits?: boolean;
   children: React.ReactElement;
@@ -164,7 +177,7 @@ const OverlayView: FC<OverlayViewProps>;
 
 | Name                         | Description                                                                                                                                                        | Default                |
 | :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
-| `mapPaneLayer?`              | [see](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes)                                                                 | `'overlayMouseTarget'` |
+| `mapPaneLayer?`              | see [link](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes)                                                            | `'overlayMouseTarget'` |
 | `preventMapHits?`            | stops click or tap on the element from bubbling up to the map. Use this to prevent the map from triggering `"click"` events                                        | `false`                |
 | `preventMapHitsAndGestures?` | stops click, tap, drag, and wheel events on the element from bubbling up to the map. Use this to prevent map dragging and zooming, as well as map `"click"` events | `false`                |
 | `children`                   | a single child content element. **Needs to be able to hold a ref**                                                                                                 |                        |

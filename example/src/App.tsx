@@ -1,10 +1,10 @@
 import {
-  LoaderStatus,
-  Loader,
+  GoogleMapsLoaderStatus,
+  GoogleMapsLoader,
   GoogleMap,
   Marker,
   OverlayView,
-  useGoogleMapLoader,
+  useGoogleMapsLoader,
 } from 'google-maps-js-api-react';
 
 import { useRef, VFC } from 'react';
@@ -12,7 +12,7 @@ import { useRef, VFC } from 'react';
 import { useState } from 'react';
 import useMarkerCluster from 'use-marker-cluster';
 
-Loader.setOptions({
+GoogleMapsLoader.setOptions({
   apiKey: '',
   libraries: ['places', 'geometry'],
 });
@@ -77,7 +77,7 @@ const markerStyle = {
 const CGoogleMap = (p: {
   points: { lat: number; lng: number; id: number }[];
 }) => {
-  const status = useGoogleMapLoader();
+  const status = useGoogleMapsLoader();
 
   const [points, setPoints] = useState(randomLocations);
 
@@ -89,7 +89,7 @@ const CGoogleMap = (p: {
 
   const mapRef = useRef<google.maps.Map>(null);
 
-  if (status === LoaderStatus.LOADED)
+  if (status === GoogleMapsLoaderStatus.LOADED)
     return (
       <>
         <button
@@ -165,9 +165,9 @@ const CGoogleMap = (p: {
 // const GoogleMap = createGoogleMapComponent([], []);
 
 const Map = () => {
-  const status = useGoogleMapLoader();
+  const status = useGoogleMapsLoader();
 
-  if (status === LoaderStatus.LOADED)
+  if (status === GoogleMapsLoaderStatus.LOADED)
     return (
       <GoogleMap
         style={mapStyle}
