@@ -1,6 +1,6 @@
 import handleService from './handleService';
-import useConst from './useConst';
 import type { PathTo } from '../types';
+import useConst from 'react-helpful-utils/useConst';
 
 /** @internal */
 const handleUseService =

@@ -7,8 +7,8 @@ export type CircleProps = ComponentProps<typeof Circle>;
 const Circle = handleComponent<
   google.maps.Circle,
   {
-    onCenterChange: [center: GetValue<google.maps.Circle, 'center'>];
-    onRadiusChange: [radius: GetValue<google.maps.Circle, 'radius'>];
+    onCenterChanged: [center: GetValue<google.maps.Circle, 'center'>];
+    onRadiusChanged: [radius: GetValue<google.maps.Circle, 'radius'>];
   } & MouseHandlers,
   {
     /**
@@ -32,9 +32,6 @@ const Circle = handleComponent<
      */
     visible: true;
   }
->(['Circle'], {
-  onCenterChange: 'center',
-  onRadiusChange: 'radius',
-});
+>(['Circle'], ['center', 'radius']);
 
 export default Circle;

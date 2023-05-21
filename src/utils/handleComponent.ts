@@ -6,12 +6,14 @@ import {
   TypicalInstance,
   PossibleHandlers,
   PossibleProps,
+  UnGet,
 } from '../types';
 import useGoogleMap from '../hooks/useGoogleMap';
-import useConst from './useConst';
-import setRef from './setRef';
 import getFromGoogleMap from './getFromGoogleMap';
 import useHandlersAndProps from './useHandlersAndProps';
+import getConnectedEventsAndProps from './getConnectedEventsAndProps';
+import useConst from 'react-helpful-utils/useConst';
+import setRef from 'react-helpful-utils/setRef';
 
 type MapChild = TypicalInstance & {
   setMap(map: google.maps.Map | null): void;
@@ -23,10 +25,12 @@ const handleComponent = <
   H extends PossibleHandlers,
   P extends PossibleProps<Instance>
 >(
-  classNames: PathTo<Instance>,
-  connectedHandlersAndState?: Partial<Record<keyof H, keyof P>>
-) =>
-  forwardRef<Instance, CombineProps<Instance, H, P>>((props, ref) => {
+  instancePath: PathTo<Instance>,
+  connectedProps?: Array<UnGet<keyof Instance>>
+) => {
+  const connectedEventsAndProps = getConnectedEventsAndProps(connectedProps);
+
+  return forwardRef<Instance, CombineProps<Instance, H, P>>((props, ref) => {
     const map = useGoogleMap();
 
     let remove: () => void;
@@ -36,7 +40,7 @@ const handleComponent = <
     useHandlersAndProps(
       useConst(() => {
         const instance: Instance = new (getFromGoogleMap(
-          classNames
+          instancePath
         ) as ClassType<Instance>)({
           map,
           ...props.defaultOptions,
@@ -54,12 +58,13 @@ const handleComponent = <
         return instance;
       }),
       props,
-      connectedHandlersAndState || ({} as any),
+      connectedEventsAndProps,
       ['defaultOptions']
     );
 
     return null;
   });
+};
 
 /** @internal */
 export default handleComponent;

@@ -38,6 +38,7 @@ const run = async (outDir: string) => {
         declaration: true,
         stripInternal: true,
         outDir,
+        strictNullChecks: true,
         jsx: ts.JsxEmit.React,
       })
       .emit().emitSkipped

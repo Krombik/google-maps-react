@@ -23,20 +23,17 @@ yarn add google-maps-js-api-react && yarn add @types/google.maps --dev
 ## Example
 
 ```tsx
-import {
-  useGoogleMapLoader,
-  GoogleMap,
-  Marker,
-  OverlayView,
+import { GoogleMap, Marker, OverlayView } from 'google-maps-js-api-react';
+import useGoogleMapsLoader, {
   GoogleMapsLoaderStatus,
   GoogleMapsLoader,
-} from 'google-maps-js-api-react';
+} from 'use-google-maps-loader';
 import { useCallback } from 'react';
 
-GoogleMapsLoader.setOptions({ apiKey: API_KEY, defer: true });
+GoogleMapsLoader({ apiKey: API_KEY, defer: true });
 
 const Map = () => {
-  const status = useGoogleMapLoader();
+  const status = useGoogleMapsLoader();
 
   const handleClick = useCallback(() => console.log('clicked'), []);
 
@@ -91,7 +88,7 @@ const Map = () => {
   - [HeatmapLayer](#heatmaplayer)
 - [Hooks](#hooks)
   - [useGoogleMap](#usegooglemap)
-  - [useGoogleMapLoader](#usegooglemaploader)
+  - [useGoogleMapsLoader](#usegooglemapsloader)
   - [useMarkerCluster](#usemarkercluster)
   - [Service hooks](#service-hooks)
     - [useAutocompleteService](#useautocompleteservice)
@@ -348,8 +345,8 @@ const Polyline: React.ForwardRefExoticComponent<
 
 ```ts
 type CircleProps = {
-  onCenterChange?(this: google.maps.Circle, center: google.maps.LatLng): void;
-  onRadiusChange?(this: google.maps.Circle, radius: number): void;
+  onCenterChanged?(this: google.maps.Circle, center: google.maps.LatLng): void;
+  onRadiusChanged?(this: google.maps.Circle, radius: number): void;
   onClick?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
   onContextMenu?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
   onDoubleClick?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
@@ -383,7 +380,7 @@ const Circle: React.ForwardRefExoticComponent<
 
 ```ts
 type RectangleProps = {
-  onBoundsChange?(
+  onBoundsChanged?(
     this: google.maps.Rectangle,
     bounds: google.maps.LatLngBounds
   ): void;
@@ -495,31 +492,9 @@ Context of [GoogleMap](#googlemap) component
 
 ---
 
-### useGoogleMapLoader
+### useGoogleMapsLoader
 
-```ts
-enum GoogleMapsLoaderStatus {
-  NONE = 0,
-  LOADING = 1,
-  LOADED = 2,
-  ERROR = 3,
-}
-
-type Options = {
-  onLoaded?(): void;
-  onError?(err: ErrorEvent | Error): void;
-};
-
-const useGoogleMapsLoader: (options?: Options) => GoogleMapsLoaderStatus;
-```
-
-[google-maps-js-api-loader](https://github.com/Krombik/google-map-loader) implementation
-
-Hook for google maps script loading
-
-> Don't forgot to set options to `GoogleMapsLoader`, like in [example](#example)
-
-> You can import `GoogleMapsLoader` if you need "silent" loading or loading outside of react.
+This hook has been moved to [use-google-maps-loader](https://www.npmjs.com/package/use-google-maps-loader) library
 
 ---
 
@@ -539,7 +514,7 @@ const { geocode } = useGeocoder(); // throws error if google.maps not loaded yet
 const geocoder = useGeocoder(); // no error will be throw
 
 const fn = async () => {
-  await Loader.completion;
+  await GoogleMapsLoader.completion;
 
   const res = await geocoder.geocode(someArg);
 };
