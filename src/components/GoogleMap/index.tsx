@@ -10,11 +10,12 @@ import type {
   DragEventName,
   MouseHandlers,
 } from '../../types';
-import useConst from '../../utils/useConst';
-import setRef from '../../utils/setRef';
 import MapContext from '../../context/MapContext';
 import useHandlersAndProps from '../../utils/useHandlersAndProps';
 import PanesProvider from '../../providers/PanesProvider';
+import getConnectedEventsAndProps from '../../utils/getConnectedEventsAndProps';
+import useConst from 'react-helpful-utils/useConst';
+import setRef from 'react-helpful-utils/setRef';
 
 type Props = CombineProps<
   google.maps.Map,
@@ -63,6 +64,15 @@ type Props = CombineProps<
 
 export type GoogleMapProps = ComponentProps<typeof GoogleMap>;
 
+const connectedEventsAndProps = getConnectedEventsAndProps<google.maps.Map>([
+  'center',
+  'heading',
+  'mapTypeId',
+  'tilt',
+  'zoom',
+  'bounds',
+]);
+
 const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
   (props, ref) => {
     const { children } = props;
@@ -93,17 +103,10 @@ const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
 
     const map = data[0];
 
-    useHandlersAndProps(
+    useHandlersAndProps<PropsWithChildren<Props>, google.maps.Map>(
       map,
       props,
-      {
-        onCenterChanged: 'center',
-        onHeadingChanged: 'heading',
-        onMapTypeIdChanged: 'mapTypeId',
-        onTiltChanged: 'tilt',
-        onZoomChanged: 'zoom',
-        onBoundsChanged: 'bounds',
-      },
+      connectedEventsAndProps,
       ['className', 'style', 'children', 'defaultOptions']
     );
 

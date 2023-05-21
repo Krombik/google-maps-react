@@ -18,8 +18,6 @@ export { default as OverlayView } from './components/OverlayView';
 
 export { default as useGoogleMap } from './hooks/useGoogleMap';
 
-export { default as useGoogleMapsLoader } from './hooks/useGoogleMapsLoader';
-
 export { default as useAutocompleteService } from './hooks/service/useAutocompleteService';
 
 export { default as useDirectionService } from './hooks/service/useDirectionService';
@@ -35,11 +33,6 @@ export { default as useMaxZoomService } from './hooks/service/useMaxZoomService'
 export { default as usePlacesService } from './hooks/service/usePlacesService';
 
 export { default as useStreetViewService } from './hooks/service/useStreetViewService';
-
-export {
-  default as GoogleMapsLoader,
-  GoogleMapsLoaderStatus,
-} from 'google-maps-js-api-loader';
 
 export type { CircleProps } from './components/Circle';
 
@@ -58,8 +51,3 @@ export type { PolylineProps } from './components/Polyline';
 export type { RectangleProps } from './components/Rectangle';
 
 export type { OverlayViewProps } from './components/OverlayView';
-
-export type {
-  GoogleMapsLoaderOptions,
-  GoogleMapsLibrary,
-} from 'google-maps-js-api-loader';

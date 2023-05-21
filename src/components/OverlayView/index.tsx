@@ -5,13 +5,14 @@ import {
   useContext,
   useRef,
   useEffect,
+  FC,
 } from 'react';
 import { createPortal } from 'react-dom';
 import PanesContext from '../../context/PanesContext';
 import useGoogleMap from '../../hooks/useGoogleMap';
-import noop from '../../utils/noop';
-import setRef from '../../utils/setRef';
-import useConst from '../../utils/useConst';
+import noop from 'lodash.noop';
+import useConst from 'react-helpful-utils/useConst';
+import setRef from 'react-helpful-utils/setRef';
 
 export type OverlayViewProps = {
   /**
@@ -32,7 +33,7 @@ export type OverlayViewProps = {
   lng: number;
 };
 
-const OverlayView = (props: OverlayViewProps) => {
+const OverlayView: FC<OverlayViewProps> = (props) => {
   const map = useGoogleMap();
 
   const updateLatLngRef =
@@ -40,12 +41,16 @@ const OverlayView = (props: OverlayViewProps) => {
 
   const panes = useContext(PanesContext);
 
+  let effected: undefined | true;
+
   useEffect(() => {
+    effected = true;
+
     updateLatLngRef.current(props);
   }, [props.lat, props.lng]);
 
   const ref = useConst<RefCallback<HTMLElement>>(() => {
-    const parentRef = props.children.ref;
+    const outerRef = props.children.ref;
 
     const overlayView = new google.maps.OverlayView();
 
@@ -65,7 +70,7 @@ const OverlayView = (props: OverlayViewProps) => {
 
         style.position = 'absolute';
 
-        overlayView.draw = () => {
+        const draw = () => {
           const pos = overlayView.getProjection().fromLatLngToDivPixel(latLng);
 
           if (pos) {
@@ -74,20 +79,26 @@ const OverlayView = (props: OverlayViewProps) => {
           }
         };
 
+        const updateLatLng = (latLngLiteral: google.maps.LatLngLiteral) => {
+          latLng = new google.maps.LatLng(latLngLiteral);
+
+          draw();
+        };
+
+        overlayView.draw = draw;
+
         overlayView.setMap(map);
 
-        updateLatLngRef.current = () => {
-          updateLatLngRef.current = (latLngLiteral) => {
-            latLng = new google.maps.LatLng(latLngLiteral);
-
-            overlayView.draw();
-          };
-        };
+        updateLatLngRef.current = effected
+          ? updateLatLng
+          : () => {
+              updateLatLngRef.current = updateLatLng;
+            };
       } else {
         overlayView.setMap(el);
       }
 
-      setRef(parentRef, el);
+      setRef(outerRef, el);
     };
   });
 

@@ -1,4 +1,3 @@
-import { HandlerName } from './utils/constants';
 type GetLiteral<T extends string> = `get${Capitalize<T>}`;
 
 /** @internal */
@@ -89,7 +88,62 @@ type OptionsOf<Instance extends TypicalInstance> = NonNullable<
 >;
 
 /** @internal */
-export type PossibleHandlers = Partial<Record<HandlerName, [arg?: any]>>;
+export type PossibleHandlers = Partial<
+  Record<
+    // Mouse
+    | 'onClick'
+    | 'onContextMenu'
+    | 'onDblClick'
+    | 'onDrag'
+    | 'onDragEnd'
+    | 'onDragStart'
+    | 'onMouseDown'
+    | 'onMouseUp'
+    | 'onMouseMove'
+    | 'onMouseOut'
+    | 'onMouseOver'
+    | 'onRightClick'
+
+    // Common
+    | 'onBoundsChanged'
+    | 'onCenterChanged'
+    | 'onVisibleChanged'
+
+    // Map
+    | 'onHeadingChanged'
+    | 'onIdle'
+    | 'onMapTypeIdChanged'
+    | 'onProjectionChanged'
+    | 'onResize'
+    | 'onTilesLoaded'
+    | 'onTiltChanged'
+    | 'onZoomChanged'
+
+    // Marker
+    | 'onAnimationChanged'
+    | 'onClickableChanged'
+    | 'onCursorChanged'
+    | 'onDraggableChanged'
+    | 'onFlatChanged'
+    | 'onIconChanged'
+    | 'onPositionChanged'
+    | 'onShapeChanged'
+    | 'onTitleChanged'
+    | 'onZIndexChanged'
+
+    // Circle
+    | 'onRadiusChanged'
+
+    // DrawingManager
+    | 'onCircleComplete'
+    | 'onMarkerComplete'
+    | 'onOverlayComplete'
+    | 'onPolygonComplete'
+    | 'onPolylineComplete'
+    | 'onRectangleComplete',
+    [arg?: any]
+  >
+>;
 
 /** @internal */
 export type PossibleProps<Instance> = Partial<
@@ -136,7 +190,7 @@ export type PolyHandlers = Omit<
 export type MouseHandlers<Event = google.maps.MapMouseEvent> = {
   onClick: [e: Event];
   onContextMenu: [e: Event];
-  onDoubleClick: [e: Event];
+  onDblClick: [e: Event];
   onDrag: [e: Event];
   onDragEnd: [e: Event];
   onDragStart: [e: Event];

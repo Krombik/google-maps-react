@@ -4247,10 +4247,15 @@ globby@^11.0.1, globby@^11.0.4:
     merge2 "^1.4.1"
     slash "^3.0.0"
 
-google-maps-js-api-loader@^2.2.1:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/google-maps-js-api-loader/-/google-maps-js-api-loader-2.2.1.tgz#02e61a8c203a9a5f4c638e0ea5a0a984fc577fdd"
-  integrity sha512-oFdp2QhMpU6/BTxcxFl8qr5iTD9lid+Fm+gxxnWkRuIFuf1MtGecN54TpujZdGkchFU6xIhrKgZBnM8LpO5QFw==
+google-maps-js-api-loader@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/google-maps-js-api-loader/-/google-maps-js-api-loader-2.3.0.tgz#6c940722cb46d9108a2886b9f5888b1b32434aa7"
+  integrity sha512-B2cQeSSscbbgYnIMgxE4PjNdLyqKfZ8CBdvWpFWF82hiAeFfNhUVN/Fwv4RZVW8SACNKEaUQc1O+82hyJFf49g==
+
+google-maps-js-api-loader@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/google-maps-js-api-loader/-/google-maps-js-api-loader-3.0.0.tgz#a4a8ef901595b9dbe1c2741b3595ad9e507a9145"
+  integrity sha512-+WMSuy4ymR8ZKP535BnzuZUgR48Ando/KSq50xYyuUTAGMnK/2OI0z/EVarkHmy5hj8L+kLaKkpZVQMPweIDYQ==
 
 "google-maps-js-api-react@link:../build":
   version "0.0.0"
@@ -5511,6 +5516,11 @@ lodash.merge@^4.6.2:
   version "4.6.2"
   resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.2.tgz#558aa53b43b661e1925a0afdfa36a9a1085fe57a"
   integrity sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==
+
+lodash.noop@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/lodash.noop/-/lodash.noop-3.0.1.tgz#38188f4d650a3a474258439b96ec45b32617133c"
+  integrity sha512-TmYdmu/pebrdTIBDK/FDx9Bmfzs9x0sZG6QIJuMDTqEPfeciLcN13ij+cOd0i9vwJfBtbG9UQ+C7MkXgYxrIJg==
 
 lodash.sortby@^4.7.0:
   version "4.7.0"
@@ -7990,9 +8000,20 @@ uri-js@^4.2.2:
   dependencies:
     punycode "^2.1.0"
 
-"use-marker-cluster@link:../../use-marker-cluster/build":
-  version "0.0.0"
-  uid ""
+use-google-maps-loader@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/use-google-maps-loader/-/use-google-maps-loader-1.0.0.tgz#543db6e4646698d25653a492b59f6f11a3595e9b"
+  integrity sha512-utDt6TzEDoUsKl3bkY2w1Sgf0LPXh5atTL45CCaDmqtNQwJSLEPBc9jVlUvgoE3ReUuPV5kxUrHVlIfi4GieXw==
+  dependencies:
+    google-maps-js-api-loader "^3.0.0"
+    lodash.noop "^3.0.1"
+
+use-marker-cluster@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/use-marker-cluster/-/use-marker-cluster-1.0.1.tgz#0bbb287faed24c643e370b77878e49426219954f"
+  integrity sha512-0Skqeb+dXX6W/NWFYucv49m1pJ0mNcchcgCw/ciCFGL2utCO+waAI5b787gqaZ4mjZs2LqTaf+bx5wpea5AWow==
+  dependencies:
+    marker-cluster "^2.0.7"
 
 util-deprecate@^1.0.1, util-deprecate@^1.0.2, util-deprecate@~1.0.1:
   version "1.0.2"

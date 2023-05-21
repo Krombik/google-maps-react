@@ -1,6 +1,6 @@
 import React, { FC, PropsWithChildren, useState } from 'react';
 import PanesContext from '../context/PanesContext';
-import noop from '../utils/noop';
+import noop from 'lodash.noop';
 
 type Props = PropsWithChildren<{ map: google.maps.Map }>;
 

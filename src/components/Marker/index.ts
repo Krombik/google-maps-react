@@ -66,16 +66,19 @@ const Marker = handleComponent<
      */
     zIndex: true;
   }
->(['Marker'], {
-  onAnimationChanged: 'animation',
-  onCursorChanged: 'cursor',
-  onDraggableChanged: 'draggable',
-  onIconChanged: 'icon',
-  onPositionChanged: 'position',
-  onShapeChanged: 'shape',
-  onTitleChanged: 'title',
-  onVisibleChanged: 'visible',
-  onZIndexChanged: 'zIndex',
-});
+>(
+  ['Marker'],
+  [
+    'animation',
+    'cursor',
+    'draggable',
+    'icon',
+    'position',
+    'shape',
+    'title',
+    'visible',
+    'zIndex',
+  ]
+);
 
 export default Marker;

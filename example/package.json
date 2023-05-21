@@ -18,7 +18,8 @@
     "react-scripts": "^5.0.1",
     "typescript": "link:../node_modules/typescript",
     "google-maps-js-api-react": "link:../build",
-    "use-marker-cluster": "link:../../use-marker-cluster/build"
+    "use-marker-cluster": "^1.0.1",
+    "use-google-maps-loader": "^1.0.0"
   },
   "eslintConfig": {
     "extends": "react-app"

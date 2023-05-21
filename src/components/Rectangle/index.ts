@@ -7,7 +7,7 @@ export type RectangleProps = ComponentProps<typeof Rectangle>;
 const Rectangle = handleComponent<
   google.maps.Rectangle,
   {
-    onBoundsChange: [bounds: GetValue<google.maps.Rectangle, 'bounds'>];
+    onBoundsChanged: [bounds: GetValue<google.maps.Rectangle, 'bounds'>];
   } & MouseHandlers,
   {
     bounds: true;
@@ -24,6 +24,6 @@ const Rectangle = handleComponent<
      */
     visible: true;
   }
->(['Rectangle'], { onBoundsChange: 'bounds' });
+>(['Rectangle'], ['bounds']);
 
 export default Rectangle;

@@ -1,19 +1,16 @@
-import {
-  GoogleMapsLoaderStatus,
-  GoogleMapsLoader,
-  GoogleMap,
-  Marker,
-  OverlayView,
-  useGoogleMapsLoader,
-} from 'google-maps-js-api-react';
+import { GoogleMap, Marker, OverlayView } from 'google-maps-js-api-react';
 
 import { useRef, VFC } from 'react';
 
 import { useState } from 'react';
+import useGoogleMapsLoader, {
+  GoogleMapsLoader,
+  GoogleMapsLoaderStatus,
+} from 'use-google-maps-loader';
 import useMarkerCluster from 'use-marker-cluster';
 
-GoogleMapsLoader.setOptions({
-  apiKey: '',
+GoogleMapsLoader({
+  key: '',
   libraries: ['places', 'geometry'],
 });
 

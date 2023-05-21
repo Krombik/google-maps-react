@@ -1,12 +1,16 @@
 import fs from 'fs/promises';
 import { Folder } from './constants.mjs';
 
-const NESTED_PACKAGE_JSON = JSON.stringify({
-  sideEffects: false,
-  module: './index.js',
-  main: './index.cjs',
-  types: './index.d.ts',
-});
+const NESTED_PACKAGE_JSON = JSON.stringify(
+  {
+    sideEffects: false,
+    module: './index.js',
+    main: './index.cjs',
+    types: './index.d.ts',
+  },
+  undefined,
+  2
+);
 
 export const addNestedPackagesJson = async (
   path: string,
@@ -32,30 +36,34 @@ const pickFrom = (obj: Record<string, any>, keys: string[]) =>
   );
 
 export const getMainPackageJson = async () =>
-  JSON.stringify({
-    ...pickFrom(JSON.parse((await fs.readFile('package.json')).toString()), [
-      'name',
-      'version',
-      'author',
-      'description',
-      'keywords',
-      'repository',
-      'license',
-      'bugs',
-      'homepage',
-      'peerDependencies',
-      'peerDependenciesMeta',
-      'dependencies',
-      'engines',
-    ]),
-    publishConfig: {
-      access: 'public',
+  JSON.stringify(
+    {
+      ...pickFrom(JSON.parse((await fs.readFile('package.json')).toString()), [
+        'name',
+        'version',
+        'author',
+        'description',
+        'keywords',
+        'repository',
+        'license',
+        'bugs',
+        'homepage',
+        'peerDependencies',
+        'peerDependenciesMeta',
+        'dependencies',
+        'engines',
+      ]),
+      publishConfig: {
+        access: 'public',
+      },
+      main: './index.cjs',
+      module: './index.js',
+      types: './index.d.ts',
+      sideEffects: false,
     },
-    main: './index.cjs',
-    module: './index.js',
-    types: './index.d.ts',
-    sideEffects: false,
-  });
+    undefined,
+    2
+  );
 
 const handleDeclarationFile = async (path: string) => {
   if ((await fs.readFile(path)).toString() === 'export {};\n') {
