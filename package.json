@@ -1,6 +1,6 @@
 {
   "name": "google-maps-js-api-react",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Fast, tree-shakable, and light-weight React components and hooks for integrating Google Maps API functionality",
   "author": "Krombik",
   "license": "MIT",
@@ -33,13 +33,13 @@
   },
   "dependencies": {
     "lodash.noop": "^3.0.1",
-    "react-helpful-utils": "^1.0.0"
+    "react-helpful-utils": "^1.0.1"
   },
   "devDependencies": {
-    "@types/google.maps": "^3.53.1",
+    "@types/google.maps": "^3.53.3",
     "@types/lodash.noop": "^3.0.7",
-    "@types/node": "^20.2.1",
-    "@types/react": "^18.2.6",
+    "@types/node": "^20.2.5",
+    "@types/react": "^18.2.9",
     "@types/react-dom": "^18.2.4",
     "prettier": "^2.8.8",
     "ts-node": "^10.9.1",

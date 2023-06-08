@@ -8,7 +8,7 @@ import {
   PossibleProps,
   UnGet,
 } from '../types';
-import useGoogleMap from '../hooks/useGoogleMap';
+import useGoogleMap from '../useGoogleMap';
 import getFromGoogleMap from './getFromGoogleMap';
 import useHandlersAndProps from './useHandlersAndProps';
 import getConnectedEventsAndProps from './getConnectedEventsAndProps';
