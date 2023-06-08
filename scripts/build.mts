@@ -1,7 +1,7 @@
 import { build } from 'tsup';
 import ts from 'typescript';
 import fs from 'fs/promises';
-import { FILES_TO_COPY, Folder } from './constants.mjs';
+import { FILES_TO_COPY } from './constants.mjs';
 import {
   addNestedPackagesJson,
   getMainPackageJson,
@@ -11,15 +11,37 @@ import {
 const run = async (outDir: string) => {
   await fs.rm(outDir, { recursive: true, force: true });
 
+  if (
+    ts
+      .createProgram(['src/index.ts'], {
+        emitDeclarationOnly: true,
+        declaration: true,
+        stripInternal: true,
+        strictNullChecks: true,
+        jsx: ts.JsxEmit.React,
+        outDir,
+      })
+      .emit().emitSkipped
+  ) {
+    throw new Error('TypeScript compilation failed');
+  }
+
+  const children = await fs.readdir(outDir);
+
+  for (let i = 0; i < children.length; i++) {
+    const file = children[i];
+
+    const path = `${outDir}/${file}`;
+
+    await handleChild(path);
+  }
+
+  await addNestedPackagesJson(outDir);
+
   await build({
     outDir,
     minify: false,
-    entry: [
-      'src/index.ts',
-      `src/${Folder.COMPONENTS}/*/*.(ts|tsx)`,
-      `src/${Folder.HOOKS}/!(${Folder.SERVICE})/*.ts`,
-      `src/${Folder.HOOKS}/${Folder.SERVICE}/*/*.ts`,
-    ],
+    entry: ['src/index.ts', `src/!(utils)/*.(ts|tsx)`],
     splitting: true,
     sourcemap: true,
     clean: false,
@@ -30,42 +52,6 @@ const run = async (outDir: string) => {
     platform: 'browser',
     external: ['react'],
   });
-
-  if (
-    ts
-      .createProgram(['src/index.ts'], {
-        emitDeclarationOnly: true,
-        declaration: true,
-        stripInternal: true,
-        outDir,
-        strictNullChecks: true,
-        jsx: ts.JsxEmit.React,
-      })
-      .emit().emitSkipped
-  ) {
-    throw new Error('TypeScript compilation failed');
-  }
-
-  const children = await fs.readdir(outDir);
-
-  const chunksDir = `${outDir}/${Folder.CHUNKS}`;
-
-  await fs.mkdir(chunksDir);
-
-  for (let i = 0; i < children.length; i++) {
-    const file = children[i];
-
-    const path = `${outDir}/${file}`;
-
-    if (file.startsWith('chunk-')) {
-      await fs.rename(path, `${chunksDir}/${file}`);
-    } else {
-      await handleChild(path);
-    }
-  }
-
-  await addNestedPackagesJson(`${outDir}/${Folder.COMPONENTS}`);
-  await addNestedPackagesJson(`${outDir}/${Folder.HOOKS}`, [Folder.SERVICE]);
 
   await fs.writeFile(`${outDir}/package.json`, await getMainPackageJson());
 
