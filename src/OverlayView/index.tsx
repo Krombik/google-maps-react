@@ -1,21 +1,23 @@
 import {
-  RefCallback,
-  ReactElement,
-  RefAttributes,
+  type RefCallback,
+  type ReactElement,
   useContext,
-  useRef,
-  useEffect,
-  FC,
+  forwardRef,
+  useLayoutEffect,
 } from 'react';
 import { createPortal } from 'react-dom';
-import PanesContext from '../utils/PanesContext';
-import useGoogleMap from '../useGoogleMap';
 import noop from 'lodash.noop';
 import useConst from 'react-helpful-utils/useConst';
+import GetPaneContext from '../utils/GetPaneContext';
+import { GoogleMapsLoader } from 'google-maps-js-api-loader';
+import { MAPS } from '../utils/constants';
 import setRef from 'react-helpful-utils/setRef';
+import handleRef from '../utils/handleRef';
+import MapContext from '../utils/MapContext';
 
 export type OverlayViewProps = {
   /**
+   * Specifies which map pane to use for this overlay.
    * @see [link](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes)
    * @default 'overlayMouseTarget'
    */
@@ -28,50 +30,52 @@ export type OverlayViewProps = {
    * stops click or tap on the element from bubbling up to the map. Use this to prevent the map from triggering `"click"` events
    */
   preventMapHits?: boolean;
-  children: ReactElement & RefAttributes<HTMLElement>;
+  /**
+   * [render](https://react.dev/reference/react/cloneElement#passing-data-with-a-render-prop) prop, a function that returns a React element and provides the ability to attach {@link ref} to it
+   */
+  render(ref: RefCallback<HTMLElement>): ReactElement;
   lat: number;
   lng: number;
 };
 
-const OverlayView: FC<OverlayViewProps> = (props) => {
-  const map = useGoogleMap();
+let _OverlayView: typeof google.maps.OverlayView;
 
-  const updateLatLngRef =
-    useRef<(latLng: google.maps.LatLngLiteral) => void>(noop);
+const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
+  (props, outerRef) =>
+    useConst(() => {
+      let draw = noop;
 
-  const panes = useContext(PanesContext);
+      let lat: number;
 
-  let effected: undefined | true;
+      let lng: number;
 
-  useEffect(() => {
-    effected = true;
+      let map: google.maps.Map;
 
-    updateLatLngRef.current(props);
-  }, [props.lat, props.lng]);
+      const { preventMapHits, preventMapHitsAndGestures } = props;
 
-  const ref = useConst<RefCallback<HTMLElement>>(() => {
-    const outerRef = props.children.ref;
+      const ref = handleRef<HTMLElement>((el) => {
+        if (!_OverlayView) {
+          _OverlayView = GoogleMapsLoader.get(MAPS)!.OverlayView;
+        }
 
-    const overlayView = new google.maps.OverlayView();
-
-    overlayView.onAdd = overlayView.onRemove = noop;
-
-    return (el) => {
-      if (el) {
-        if (props.preventMapHitsAndGestures) {
-          google.maps.OverlayView.preventMapHitsAndGesturesFrom(el);
-        } else if (props.preventMapHits) {
-          google.maps.OverlayView.preventMapHitsFrom(el);
+        if (preventMapHitsAndGestures) {
+          _OverlayView.preventMapHitsAndGesturesFrom(el);
+        } else if (preventMapHits) {
+          _OverlayView.preventMapHitsFrom(el);
         }
 
         const style = el.style;
 
-        let latLng = new google.maps.LatLng(props);
+        const overlayView = new _OverlayView();
+
+        const getProjection = overlayView.getProjection.bind(overlayView);
+
+        overlayView.onAdd = overlayView.onRemove = noop;
 
         style.position = 'absolute';
 
-        const draw = () => {
-          const pos = overlayView.getProjection().fromLatLngToDivPixel(latLng);
+        draw = () => {
+          const pos = getProjection().fromLatLngToDivPixel({ lat, lng });
 
           if (pos) {
             style.left = pos.x + 'px';
@@ -79,39 +83,32 @@ const OverlayView: FC<OverlayViewProps> = (props) => {
           }
         };
 
-        const updateLatLng = (latLngLiteral: google.maps.LatLngLiteral) => {
-          latLng = new google.maps.LatLng(latLngLiteral);
-
-          draw();
-        };
-
         overlayView.draw = draw;
 
         overlayView.setMap(map);
 
-        updateLatLngRef.current = effected
-          ? updateLatLng
-          : () => {
-              updateLatLngRef.current = updateLatLng;
-            };
-      } else {
-        overlayView.setMap(el);
-      }
+        setRef(outerRef, el);
 
-      setRef(outerRef, el);
-    };
-  });
+        return () => {
+          overlayView.setMap(null);
 
-  return (
-    panes &&
-    createPortal(
-      {
-        ...props.children,
-        ref,
-      } as any,
-      panes[props.mapPaneLayer || 'overlayMouseTarget']
-    )
-  );
-};
+          setRef(outerRef, null);
+
+          draw = noop;
+        };
+      });
+
+      return (props: OverlayViewProps) => {
+        map = useContext(MapContext);
+
+        useLayoutEffect(draw, [(lat = props.lat), (lng = props.lng)]);
+
+        return createPortal(
+          props.render(ref),
+          useContext(GetPaneContext)(props.mapPaneLayer || 'overlayMouseTarget')
+        );
+      };
+    })(props)
+);
 
 export default OverlayView;

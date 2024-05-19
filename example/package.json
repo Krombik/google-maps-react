@@ -13,13 +13,13 @@
     "@types/node": "link:../node_modules/@types/node",
     "@types/react": "^18.0.9",
     "@types/react-dom": "^18.0.3",
-    "react": "^18.1.0",
-    "react-dom": "^18.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-scripts": "^5.0.1",
-    "typescript": "link:../node_modules/typescript",
+    "typescript": "^5.4.5",
     "google-maps-js-api-react": "link:../build",
     "use-marker-cluster": "^1.0.1",
-    "use-google-maps-loader": "^1.0.0"
+    "use-google-maps-loader": "link:../../google-maps-loader/build"
   },
   "eslintConfig": {
     "extends": "react-app"

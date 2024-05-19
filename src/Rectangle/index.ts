@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import type { GetValue, MouseHandlers } from '../types';
 import handleComponent from '../utils/handleComponent';
+import { MAPS } from '../utils/constants';
 
 export type RectangleProps = ComponentProps<typeof Rectangle>;
 
@@ -24,6 +25,6 @@ const Rectangle = handleComponent<
      */
     visible: true;
   }
->(['Rectangle'], ['bounds']);
+>([MAPS, 'Rectangle'], ['bounds']);
 
 export default Rectangle;
