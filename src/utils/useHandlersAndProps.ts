@@ -1,68 +1,76 @@
-import { useEffect } from 'react';
-import { UnGet } from '../types';
+import { useEffect, useLayoutEffect } from 'react';
+import type { UnGet } from '../types';
 import useConst from 'react-helpful-utils/useConst';
+import { CHANGED } from './constants';
 
 /** @internal */
 const useHandlersAndProps = <
-  Props extends {},
-  Instance extends google.maps.MVCObject
+  Props extends Record<string, any>,
+  Instance extends google.maps.MVCObject & {
+    setOptions(options: Record<string, any>): void;
+  },
 >(
-  instance: Instance,
   props: Props,
   connectedPairs: Map<string, UnGet<keyof Instance>>,
-  omittedKeys: Array<keyof Props>
-) => {
-  type Key = keyof Props extends string ? keyof Props : never;
+  isKeyOmitted: (key: keyof Props) => boolean
+) =>
+  useConst(() => {
+    const isTriggeredBySetStateSet = new Set<string>();
 
-  const data = useConst<
-    [
-      prevListeners: Map<string, google.maps.MapsEventListener>,
-      isTriggeredBySetStateSet: Set<string>,
-      prevProps: Props | undefined
-    ]
-  >(
-    () =>
-      [
-        new Map<string, google.maps.MapsEventListener>(),
-        new Set<string>(),
-      ] as any
-  );
+    const handlersList: string[] = [];
 
-  useEffect(() => {
-    const prevListeners = data[0];
+    const propsList: string[] = [];
 
-    const isTriggeredBySetStateSet = data[1];
+    let isUpdated: boolean;
 
-    const prevProps = data[2];
+    let instance: Instance;
 
-    const keys = Object.keys(props) as Array<Key>;
+    for (const key in props) {
+      if (!isKeyOmitted(key)) {
+        (key.startsWith('on') ? handlersList : propsList).push(key);
+      }
+    }
 
-    for (let i = keys.length; i--; ) {
-      const key = keys[i];
+    return (props: Props) => {
+      for (let i = propsList.length; i--; ) {
+        const key = propsList[i];
 
-      const value: any = props[key];
+        const value: any = props[key];
 
-      if (
-        !omittedKeys.includes(key) &&
-        (!prevProps || value !== prevProps[key])
-      ) {
-        if (key.startsWith('on')) {
-          if (prevListeners.has(key)) {
-            prevListeners.get(key)!.remove();
+        useLayoutEffect(() => {
+          if (isUpdated) {
+            isTriggeredBySetStateSet.add(key);
+
+            instance.setOptions({ [key]: value });
           }
+        }, [value]);
+      }
 
+      if (propsList.length) {
+        useLayoutEffect(() => {
+          isUpdated = true;
+
+          return () => {
+            isUpdated = false;
+          };
+        }, []);
+      }
+
+      for (let i = handlersList.length; i--; ) {
+        const key = handlersList[i];
+
+        const value = props[key] as ((...args: any[]) => void) | undefined;
+
+        useEffect(() => {
           if (value) {
-            const eventName = key
-              .replace('on', '')
-              .replace('Chan', '_chan')
-              .toLowerCase();
+            const eventName = key.slice(2, -7).toLowerCase() + CHANGED;
 
-            let fn: () => void = value;
+            let fn = value;
 
             if (connectedPairs.has(eventName)) {
               const dependBy = connectedPairs.get(eventName)!;
 
-              const boundFn = value.bind(instance);
+              const boundFn = fn.bind(instance);
 
               if (dependBy in props) {
                 isTriggeredBySetStateSet.delete(dependBy);
@@ -72,28 +80,25 @@ const useHandlersAndProps = <
                     boundFn(instance.get(dependBy));
                   }
                 };
-              } else if (value.length) {
+              } else if (fn.length) {
                 fn = () => {
                   boundFn(instance.get(dependBy));
                 };
               }
             }
 
-            prevListeners.set(key, instance.addListener(eventName, fn));
-          } else {
-            prevListeners.delete(key);
+            const listener = instance.addListener(eventName, fn);
+
+            return () => listener.remove();
           }
-        } else if (prevProps) {
-          isTriggeredBySetStateSet.add(key);
-
-          instance.set(key, value);
-        }
+        }, [value]);
       }
-    }
 
-    data[2] = props;
-  });
-};
+      return (_instance: Instance) => {
+        instance = _instance;
+      };
+    };
+  })(props);
 
 /** @internal */
 export default useHandlersAndProps;

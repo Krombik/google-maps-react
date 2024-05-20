@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import type { PolyHandlers } from '../types';
 import handleComponent from '../utils/handleComponent';
+import { MAPS } from '../utils/constants';
 
 export type PolygonProps = ComponentProps<typeof Polygon>;
 
@@ -25,6 +26,6 @@ const Polygon = handleComponent<
      */
     visible: true;
   }
->(['Polygon']);
+>([MAPS, 'Polygon']);
 
 export default Polygon;

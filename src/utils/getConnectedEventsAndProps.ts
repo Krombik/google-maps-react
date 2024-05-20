@@ -1,4 +1,5 @@
-import { UnGet } from '../types';
+import type { UnGet } from '../types';
+import { CHANGED } from './constants';
 
 /** @internal */
 const getConnectedEventsAndProps = <Instance>(
@@ -11,7 +12,7 @@ const getConnectedEventsAndProps = <Instance>(
       const item = arr[i];
 
       connectedEventsAndProps.set(
-        `${(item as string).toLowerCase()}_changed`,
+        (item as string).toLowerCase() + CHANGED,
         item
       );
     }

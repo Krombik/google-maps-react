@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import type { PolyHandlers } from '../types';
 import handleComponent from '../utils/handleComponent';
+import { MAPS } from '../utils/constants';
 
 export type PolylineProps = ComponentProps<typeof Polyline>;
 
@@ -25,6 +26,6 @@ const Polyline = handleComponent<
      */
     visible: true;
   }
->(['Polyline']);
+>([MAPS, 'Polyline']);
 
 export default Polyline;

@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import type { GetValue, MouseHandlers } from '../types';
 import handleComponent from '../utils/handleComponent';
+import { MAPS } from '../utils/constants';
 
 export type CircleProps = ComponentProps<typeof Circle>;
 
@@ -32,6 +33,6 @@ const Circle = handleComponent<
      */
     visible: true;
   }
->(['Circle'], ['center', 'radius']);
+>([MAPS, 'Circle'], ['center', 'radius']);
 
 export default Circle;
