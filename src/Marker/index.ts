@@ -67,7 +67,7 @@ const Marker = handleComponent<
     zIndex: true;
   }
 >(
-  ['Marker'],
+  ['marker', 'Marker'],
   [
     'animation',
     'cursor',

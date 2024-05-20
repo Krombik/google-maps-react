@@ -1,17 +1,13 @@
-import { GoogleMap, Marker, OverlayView } from 'google-maps-js-api-react';
+import { GoogleMap, OverlayView } from 'google-maps-js-api-react';
 
 import { useRef, VFC } from 'react';
 
 import { useState } from 'react';
-import useGoogleMapsLoader, {
-  GoogleMapsLoader,
-  GoogleMapsLoaderStatus,
-} from 'use-google-maps-loader';
+import { GoogleMapsLoader } from 'google-maps-js-api-loader';
 import useMarkerCluster from 'use-marker-cluster';
 
 GoogleMapsLoader({
   key: '',
-  libraries: ['places', 'geometry'],
 });
 
 const mapStyle = { height: '100vh', width: '100vw' };
@@ -74,8 +70,6 @@ const markerStyle = {
 const CGoogleMap = (p: {
   points: { lat: number; lng: number; id: number }[];
 }) => {
-  const status = useGoogleMapsLoader();
-
   const [points, setPoints] = useState(randomLocations);
 
   const markerCluster = useMarkerCluster(points, (v) => [v.lng, v.lat], {
@@ -84,39 +78,63 @@ const CGoogleMap = (p: {
 
   const [zoom, setZoom] = useState(5);
 
+  const [center, setCenter] = useState(locations[0]);
+
+  const [toggler, setToggler] = useState(true);
+
   const mapRef = useRef<google.maps.Map>(null);
 
-  if (status === GoogleMapsLoaderStatus.LOADED)
-    return (
-      <>
-        <button
-          onClick={() => {
-            // setPoints(
-            //   Array.from({ length: 10000 }, (_, index) => ({
-            //     id: index,
-            //     ...getRandomLocation(),
-            //   }))
-            // );
+  return (
+    <>
+      <button
+        onClick={() => {
+          // setPoints(
+          //   Array.from({ length: 10000 }, (_, index) => ({
+          //     id: index,
+          //     ...getRandomLocation(),
+          //   }))
+          // );
 
-            setZoom(10);
-          }}
-        >
-          kek
-        </button>
+          // setZoom(10);
+
+          // setCenter(locations[3]);
+
+          setToggler((prev) => !prev);
+
+          // mapRef.current?.setCenter(locations[3]);
+        }}
+      >
+        kek
+      </button>
+      <button
+        onClick={() => {
+          // setCenter({ lat: 25, lng: 25 });
+          mapRef.current?.setCenter({ lat: 25, lng: 25 });
+        }}
+      >
+        trr
+      </button>
+      {toggler && (
         <GoogleMap
           style={mapStyle}
-          defaultOptions={{ scrollwheel: true }}
+          defaultOptions={{ scrollwheel: true, zoom, center }}
+          fallback={
+            <div style={{ color: 'red', width: '100%', height: '100%' }}>
+              zlupa
+            </div>
+          }
           onBoundsChanged={function (bounds) {
-            const sw = bounds.getSouthWest();
-            const ne = bounds.getNorthEast();
+            if (bounds) {
+              const sw = bounds.getSouthWest();
+              const ne = bounds.getNorthEast();
 
-            markerCluster
-              .setZoom(this.getZoom()!)
-              .setBounds(sw.lng(), sw.lat(), ne.lng(), ne.lat())
-              .callback();
+              markerCluster
+                .setZoom(this.getZoom()!)
+                .setBounds(sw.lng(), sw.lat(), ne.lng(), ne.lat())
+                .callback();
+            }
           }}
-          center={locations[0]}
-          zoom={zoom}
+          center={center}
           ref={mapRef}
         >
           {markerCluster.getPoints(
@@ -126,9 +144,12 @@ const CGoogleMap = (p: {
                 lng={lng}
                 key={key}
                 preventMapHitsAndGestures
-              >
-                <div style={markerStyle}>m{id}</div>
-              </OverlayView>
+                render={(ref) => (
+                  <div style={markerStyle} ref={ref}>
+                    m{id}
+                  </div>
+                )}
+              ></OverlayView>
             ),
             (lng, lat, count, expandZoom, key) => (
               <OverlayView
@@ -136,58 +157,28 @@ const CGoogleMap = (p: {
                 lng={lng}
                 key={key}
                 preventMapHitsAndGestures
-              >
-                <div
-                  style={markerStyle}
-                  onClick={() => {
-                    const map = mapRef.current!;
+                render={(ref) => (
+                  <div
+                    style={markerStyle}
+                    onClick={() => {
+                      const map = mapRef.current!;
 
-                    map.panTo({ lat, lng });
+                      map.panTo({ lat, lng });
 
-                    map.setZoom(expandZoom);
-                  }}
-                >
-                  {count}
-                </div>
-              </OverlayView>
+                      map.setZoom(expandZoom);
+                    }}
+                    ref={ref}
+                  >
+                    {count}
+                  </div>
+                )}
+              ></OverlayView>
             )
           )}
         </GoogleMap>
-      </>
-    );
-
-  return null;
-};
-
-// const GoogleMap = createGoogleMapComponent([], []);
-
-const Map = () => {
-  const status = useGoogleMapsLoader();
-
-  if (status === GoogleMapsLoaderStatus.LOADED)
-    return (
-      <GoogleMap
-        style={mapStyle}
-        zoom={6}
-        defaultOptions={{
-          center: { lat: -31.56391, lng: 147.154312 },
-          zoom: 6,
-        }}
-        onZoomChanged={function () {
-          this.setZoom(6);
-        }}
-      >
-        <Marker
-          position={{ lat: -31.56391, lng: 147.154312 }}
-          onClick={() => console.log('clicked')}
-        />
-        <OverlayView lat={-37.75} lng={145.116667}>
-          <div style={{ background: 'red' }}>dot</div>
-        </OverlayView>
-      </GoogleMap>
-    );
-
-  return null;
+      )}
+    </>
+  );
 };
 
 const Home: VFC = () => {

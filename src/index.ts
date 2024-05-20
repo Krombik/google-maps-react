@@ -24,18 +24,10 @@ export { default as OverlayView, type OverlayViewProps } from './OverlayView';
 
 export { default as useGoogleMap } from './useGoogleMap';
 
-export { default as useAutocompleteService } from './useAutocompleteService';
+export { default as usePane } from './usePane';
 
-export { default as useDirectionService } from './useDirectionService';
+export { default as useGoogleMapsCompletion } from './useGoogleMapsCompletion';
 
-export { default as useDistanceMatrixService } from './useDistanceMatrixService';
+export { default as useGoogleMapsLoad } from './useGoogleMapsLoad';
 
-export { default as useElevationService } from './useElevationService';
-
-export { default as useGeocoder } from './useGeocoder';
-
-export { default as useMaxZoomService } from './useMaxZoomService';
-
-export { default as usePlacesService } from './usePlacesService';
-
-export { default as useStreetViewService } from './useStreetViewService';
+export { default as useGoogleMapsStatus } from './useGoogleMapsStatus';

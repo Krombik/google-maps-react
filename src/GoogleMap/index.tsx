@@ -1,21 +1,34 @@
-import React, {
-  CSSProperties,
-  ComponentProps,
-  PropsWithChildren,
+'use client';
+
+import {
+  type ComponentProps,
+  type FC,
+  type PropsWithChildren,
+  type SuspenseProps,
+  Suspense,
   forwardRef,
+  useContext,
+  useState,
 } from 'react';
 import type {
   CombineProps,
   GetValue,
   DragEventName,
   MouseHandlers,
+  PreventLoadProps,
 } from '../types';
 import MapContext from '../utils/MapContext';
 import useHandlersAndProps from '../utils/useHandlersAndProps';
-import PanesProvider from '../utils/PanesProvider';
 import getConnectedEventsAndProps from '../utils/getConnectedEventsAndProps';
 import useConst from 'react-helpful-utils/useConst';
 import setRef from 'react-helpful-utils/setRef';
+import { GoogleMapsLoader } from 'google-maps-js-api-loader';
+import { MAPS } from '../utils/constants';
+import noop from 'lodash.noop';
+import GetPaneContext from '../utils/GetPaneContext';
+import handleHas from '../utils/handleHas';
+import toKey from 'keyweaver';
+import handleRef from '../utils/handleRef';
 
 type Props = CombineProps<
   google.maps.Map,
@@ -57,10 +70,10 @@ type Props = CombineProps<
      */
     zoom: true;
   }
-> & {
-  className?: string;
-  style?: CSSProperties;
-};
+> &
+  Pick<ComponentProps<'div'>, 'className' | 'style' | 'id'> &
+  Pick<SuspenseProps, 'fallback'> &
+  PreventLoadProps;
 
 export type GoogleMapProps = ComponentProps<typeof GoogleMap>;
 
@@ -73,53 +86,281 @@ const connectedEventsAndProps = getConnectedEventsAndProps<google.maps.Map>([
   'bounds',
 ]);
 
+const isKeyOmitted = handleHas<GoogleMapProps>([
+  'className',
+  'style',
+  'id',
+  'children',
+  'defaultOptions',
+  'fallback',
+  'preventLoad',
+]);
+
+const mapsStorage = new Map<
+  string,
+  [mapsInUse: Set<number>, maps: (google.maps.Map | google.maps.MapPanes)[]]
+>();
+
+const PropsHandler: FC<PropsWithChildren<Props>> = (props) => {
+  useHandlersAndProps<PropsWithChildren<Props>, google.maps.Map>(
+    props,
+    connectedEventsAndProps,
+    isKeyOmitted
+  )(useContext(MapContext));
+
+  return null;
+};
+
 const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
-  (props, ref) => {
-    const { children } = props;
+  (props, ref) =>
+    useConst(() => {
+      const { preventLoad } = props;
 
-    const data = useConst(() => {
-      const div = document.createElement('div');
+      let getPane: (pane: keyof google.maps.MapPanes) => Element;
 
-      const map = new google.maps.Map(div, {
-        ...props.defaultOptions,
-        ...props,
+      let map: google.maps.Map;
+
+      let error: any;
+
+      let forceRerender: (value: {}) => void;
+
+      const divRef = handleRef<HTMLDivElement>((el) => {
+        let isAlive = true;
+
+        let isExisted: boolean;
+
+        const options: google.maps.MapOptions = {
+          ...props.defaultOptions,
+          ...props,
+        };
+
+        const key = toKey([
+          options.backgroundColor || null,
+          options.controlSize || 40,
+          options.mapId || null,
+          options.renderingType || null,
+        ]);
+
+        if (!mapsStorage.has(key)) {
+          mapsStorage.set(key, [new Set(), []]);
+        }
+
+        const [mapsInUse, maps] = mapsStorage.get(key)!;
+
+        for (
+          var currMapIndex = 0;
+          mapsInUse.has(currMapIndex);
+          currMapIndex += 2
+        ) {}
+
+        mapsInUse.add(currMapIndex);
+
+        map = maps[currMapIndex] as google.maps.Map;
+
+        const handleMap = () => {
+          if (isAlive) {
+            isExisted = true;
+
+            if (map) {
+              delete options.backgroundColor;
+              delete options.controlSize;
+              delete options.mapId;
+              delete options.renderingType;
+
+              map.setOptions(options);
+
+              map.moveCamera({});
+            } else {
+              const div = document.createElement('div');
+
+              div.style.width = div.style.height = '100%';
+
+              maps[currMapIndex] = map = new (GoogleMapsLoader.get(MAPS)!.Map)(
+                div,
+                options
+              );
+            }
+
+            let promise: Promise<void> | undefined;
+
+            let panes = maps[currMapIndex + 1] as google.maps.MapPanes;
+
+            getPane = (pane) => {
+              if (panes) {
+                return panes[pane];
+              }
+
+              if (!promise) {
+                promise = new Promise<void>((resolve) => {
+                  const overlayView = new (GoogleMapsLoader.get(
+                    MAPS
+                  )!.OverlayView)();
+
+                  overlayView.onRemove = overlayView.draw = noop;
+
+                  overlayView.onAdd = () => {
+                    maps[currMapIndex + 1] = panes = overlayView.getPanes()!;
+
+                    overlayView.setMap(null);
+
+                    promise = undefined;
+
+                    resolve();
+                  };
+
+                  overlayView.setMap(map);
+                });
+              }
+
+              throw promise;
+            };
+
+            el.prepend(map.getDiv());
+
+            setRef(ref, map);
+
+            forceRerender({});
+          }
+        };
+
+        if (map) {
+          handleMap();
+        } else {
+          const status = GoogleMapsLoader.getStatus(MAPS);
+
+          if (status == 'loaded') {
+            handleMap();
+          } else {
+            const onError = (err: any) => {
+              if (isAlive) {
+                error = err;
+
+                forceRerender({});
+              }
+            };
+
+            if (status != 'error') {
+              (preventLoad
+                ? GoogleMapsLoader.getCompletion
+                : GoogleMapsLoader.load)(MAPS).then(handleMap, onError);
+            } else {
+              onError(GoogleMapsLoader.getError(MAPS));
+            }
+          }
+        }
+
+        return () => {
+          isAlive = false;
+
+          mapsInUse.delete(currMapIndex);
+
+          if (isExisted) {
+            const MAX_LAT = (Math.atan(Math.sinh(Math.PI)) * 180) / Math.PI;
+
+            const { ControlPosition, MapTypeId } = google.maps;
+
+            map.setOptions({
+              clickableIcons: true,
+              disableDefaultUI: false,
+              disableDoubleClickZoom: false,
+              draggable: true,
+              draggableCursor: null,
+              draggingCursor: null,
+              fullscreenControl: true,
+              fullscreenControlOptions: {
+                position: ControlPosition.INLINE_END_BLOCK_START,
+              },
+              gestureHandling: 'auto',
+              headingInteractionEnabled: false,
+              isFractionalZoomEnabled:
+                map.getRenderingType() === google.maps.RenderingType.VECTOR,
+              keyboardShortcuts: true,
+              mapTypeControl: true,
+              mapTypeControlOptions: {
+                mapTypeIds: [
+                  MapTypeId.ROADMAP,
+                  MapTypeId.SATELLITE,
+                  MapTypeId.HYBRID,
+                  MapTypeId.TERRAIN,
+                ],
+                position: ControlPosition.BLOCK_START_INLINE_START,
+                style: google.maps.MapTypeControlStyle.DEFAULT,
+              },
+              mapTypeId: MapTypeId.ROADMAP,
+              maxZoom: null,
+              minZoom: null,
+              noClear: false,
+              panControl: false,
+              panControlOptions: {
+                position: ControlPosition.INLINE_END_BLOCK_END,
+              },
+              restriction: {
+                latLngBounds: {
+                  west: -180,
+                  east: 180,
+                  north: MAX_LAT,
+                  south: -MAX_LAT,
+                },
+                strictBounds: false,
+              },
+              rotateControl: false,
+              rotateControlOptions: {
+                position: ControlPosition.INLINE_END_BLOCK_END,
+              },
+              scaleControl: false,
+              scaleControlOptions: {
+                style: google.maps.ScaleControlStyle.DEFAULT,
+              },
+              scrollwheel: true,
+              streetView: null,
+              streetViewControl: true,
+              styles: null,
+              tiltInteractionEnabled: false,
+              zoomControl: true,
+              zoomControlOptions: {
+                position: ControlPosition.INLINE_END_BLOCK_END,
+              },
+            });
+
+            map.moveCamera({ tilt: 0, heading: 0 });
+
+            setRef(ref, null);
+          }
+        };
       });
 
-      div.style.width = div.style.height = '100%';
+      return (props: PropsWithChildren<Props>) => {
+        if (error) {
+          throw error;
+        }
 
-      setRef(ref, map);
+        const { children, fallback } = props;
 
-      return [
-        map,
-        (el: HTMLDivElement | null) => {
-          if (el) {
-            el.prepend(div);
-          } else {
-            setRef(ref, el);
-          }
-        },
-      ] as const;
-    });
+        forceRerender = useState<{}>()[1];
 
-    const map = data[0];
-
-    useHandlersAndProps<PropsWithChildren<Props>, google.maps.Map>(
-      map,
-      props,
-      connectedEventsAndProps,
-      ['className', 'style', 'children', 'defaultOptions']
-    );
-
-    return (
-      <div ref={data[1]} className={props.className} style={props.style}>
-        {children && (
-          <MapContext.Provider value={map}>
-            <PanesProvider map={map}>{children}</PanesProvider>
-          </MapContext.Provider>
-        )}
-      </div>
-    );
-  }
+        return (
+          <div
+            ref={divRef}
+            className={props.className}
+            style={props.style}
+            id={props.id}
+          >
+            {map ? (
+              <MapContext.Provider value={map}>
+                <PropsHandler {...props} />
+                {children && (
+                  <GetPaneContext.Provider value={getPane}>
+                    <Suspense fallback={fallback || null}>{children}</Suspense>
+                  </GetPaneContext.Provider>
+                )}
+              </MapContext.Provider>
+            ) : (
+              fallback
+            )}
+          </div>
+        );
+      };
+    })(props)
 );
 
 export default GoogleMap;

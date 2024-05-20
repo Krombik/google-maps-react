@@ -1,6 +1,6 @@
 # google-maps-js-api-react
 
-> This library requires React v16.8 or later.
+> This library use [Suspense](https://react.dev/reference/react/Suspense), so it requires React v18 or later.
 
 This package provides a simple and efficient way to work with the Google Maps API, enabling map-based applications to be built with ease. With minimal setup, Google Maps functionality can be integrated into React applications using the components and hooks provided by this package. The package is designed to be fast, lightweight, and tree-shakeable, providing a performant solution for integrating Google Maps into React applications.
 
@@ -9,13 +9,19 @@ This package provides a simple and efficient way to work with the Google Maps AP
 using npm:
 
 ```
-npm install --save google-maps-js-api-react && npm install --save-dev @types/google.maps
+npm i --save google-maps-js-api-react google-maps-js-api-loader && npm install --save-dev @types/google.maps
 ```
 
 or yarn:
 
 ```
-yarn add google-maps-js-api-react && yarn add @types/google.maps --dev
+yarn add i google-maps-js-api-react google-maps-js-api-loader && yarn add -D @types/google.maps
+```
+
+or pnpm:
+
+```
+pnpm add i google-maps-js-api-react google-maps-js-api-loader && pnpm add -D @types/google.maps
 ```
 
 ---
@@ -24,41 +30,39 @@ yarn add google-maps-js-api-react && yarn add @types/google.maps --dev
 
 ```tsx
 import { GoogleMap, Marker, OverlayView } from 'google-maps-js-api-react';
-import useGoogleMapsLoader, {
-  GoogleMapsLoaderStatus,
-  GoogleMapsLoader,
-} from 'use-google-maps-loader';
+import { GoogleMapsLoader } from 'google-maps-js-api-loader';
 import { useCallback } from 'react';
 
-GoogleMapsLoader({ apiKey: API_KEY, defer: true });
+GoogleMapsLoader({ apiKey: API_KEY }, { defer: true });
 
 const Map = () => {
   const status = useGoogleMapsLoader();
 
   const handleClick = useCallback(() => console.log('clicked'), []);
 
-  if (status === GoogleMapsLoaderStatus.LOADED) {
-    return (
-      <GoogleMap
-        defaultOptions={{
-          center: { lat: -31.56391, lng: 147.154312 },
-          zoom: 6,
-        }}
-      >
-        <Marker
-          position={{ lat: -31.56391, lng: 147.154312 }}
-          onClick={handleClick}
-        />
-        <OverlayView lat={-37.75} lng={145.116667} preventMapHits>
-          <div style={{ background: 'red' }} onClick={handleClick}>
+  return (
+    <GoogleMap
+      defaultOptions={{
+        center: { lat: -31.56391, lng: 147.154312 },
+        zoom: 6,
+      }}
+    >
+      <Marker
+        position={{ lat: -31.56391, lng: 147.154312 }}
+        onClick={handleClick}
+      />
+      <OverlayView
+        lat={-37.75}
+        lng={145.116667}
+        preventMapHits
+        render={(ref) => (
+          <div ref={ref} style={{ background: 'red' }} onClick={handleClick}>
             dot
           </div>
-        </OverlayView>
-      </GoogleMap>
-    );
-  }
-
-  return null;
+        )}
+      />
+    </GoogleMap>
+  );
 };
 ```
 
@@ -88,23 +92,19 @@ const Map = () => {
   - [HeatmapLayer](#heatmaplayer)
 - [Hooks](#hooks)
   - [useGoogleMap](#usegooglemap)
-  - [useGoogleMapsLoader](#usegooglemapsloader)
+  - [usePane](#usepane)
+  - [useGoogleMapsLoad](#usegooglemapsload)
+  - [useGoogleMapsCompletion](#usegooglemapscompletion)
+  - [useGoogleMapsStatus](#usegooglemapsstatus)
   - [useMarkerCluster](#usemarkercluster)
-  - [Service hooks](#service-hooks)
-    - [useAutocompleteService](#useautocompleteservice)
-    - [useDirectionService](#usedirectionservice)
-    - [useDistanceMatrixService](#usedistancematrixservice)
-    - [useElevationService](#useelevationservice)
-    - [useGeocoder](#usegeocoder)
-    - [useMaxZoomService](#usemaxzoomservice)
-    - [usePlacesService](#useplacesservice)
-    - [useStreetViewService](#usestreetviewservice)
 
 ## Components
 
 ### GoogleMap
 
 [Map](https://developers.google.com/maps/documentation/javascript/reference/map#Map) implementation
+
+> It creates instance of [Map](https://developers.google.com/maps/documentation/javascript/reference/map#Map) only once and will reuse this instance whenever possible, avoiding unnecessary reinitialization
 
 ```ts
 type GoogleMapProps = {
@@ -146,6 +146,8 @@ type GoogleMapProps = {
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
+  fallback?: React.ReactNode;
+  preventLoad?: boolean;
 };
 
 const GoogleMap: React.ForwardRefExoticComponent<
@@ -162,9 +164,9 @@ type OverlayViewProps = {
   mapPaneLayer?: keyof google.maps.MapPanes;
   preventMapHitsAndGestures?: boolean;
   preventMapHits?: boolean;
-  children: React.ReactElement;
   lat: number;
   lng: number;
+  render(ref: React.RefCallback<HTMLElement>): React.ReactElement;
 };
 
 const OverlayView: FC<OverlayViewProps>;
@@ -172,12 +174,12 @@ const OverlayView: FC<OverlayViewProps>;
 
 [OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#OverlayView) implementation
 
-| Name                         | Description                                                                                                                                                        | Default                |
-| :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
-| `mapPaneLayer?`              | see [link](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes)                                                            | `'overlayMouseTarget'` |
-| `preventMapHits?`            | stops click or tap on the element from bubbling up to the map. Use this to prevent the map from triggering `"click"` events                                        | `false`                |
-| `preventMapHitsAndGestures?` | stops click, tap, drag, and wheel events on the element from bubbling up to the map. Use this to prevent map dragging and zooming, as well as map `"click"` events | `false`                |
-| `children`                   | a single child content element. **Needs to be able to hold a ref**                                                                                                 |                        |
+| Name                         | Description                                                                                                                                                                           | Default                |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------- |
+| `mapPaneLayer?`              | see [link](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes)                                                                               | `'overlayMouseTarget'` |
+| `preventMapHits?`            | stops click or tap on the element from bubbling up to the map. Use this to prevent the map from triggering `"click"` events                                                           | `false`                |
+| `preventMapHitsAndGestures?` | stops click, tap, drag, and wheel events on the element from bubbling up to the map. Use this to prevent map dragging and zooming, as well as map `"click"` events                    | `false`                |
+| `render`                     | [render](https://react.dev/reference/react/cloneElement#passing-data-with-a-render-prop) prop, a function that returns a React element and provides the ability to attach `ref` to it |                        |
 
 ```jsx
 const SomeComponent = forwardRef(({ children }, ref) => (
@@ -186,9 +188,11 @@ const SomeComponent = forwardRef(({ children }, ref) => (
 
 const AnotherComponent = () => {
   return (
-    <OverlayView lat={0} lng={0}>
-      <SomeComponent>hi</SomeComponent>
-    </OverlayView>
+    <OverlayView
+      lat={0}
+      lng={0}
+      render={(ref) => <SomeComponent ref={ref}>hi</SomeComponent>}
+    />
   );
 };
 ```
@@ -451,6 +455,7 @@ type DrawingManagerProps = {
   ): void;
   drawingMode?: google.maps.drawing.OverlayType;
   defaultOptions?: google.maps.drawing.DrawingManagerOptions;
+  preventLoad?: boolean;
 };
 
 const DrawingManager: React.ForwardRefExoticComponent<
@@ -470,6 +475,7 @@ type HeatmapLayerProps = {
       >
     | Array<google.maps.LatLng | google.maps.visualization.WeightedLocation>;
   defaultOptions?: google.maps.visualization.HeatmapLayerOptions;
+  preventLoad?: boolean;
 };
 
 const HeatmapLayer: React.ForwardRefExoticComponent<
@@ -492,117 +498,96 @@ Context of [GoogleMap](#googlemap) component
 
 ---
 
-### useGoogleMapsLoader
+### usePane
 
-This hook has been moved to [use-google-maps-loader](https://www.npmjs.com/package/use-google-maps-loader) library
+```ts
+const usePane: (pane: keyof google.maps.MapPanes) => Element;
+```
+
+Hook to retrieve a specific pane from [GoogleMap](#googlemap), useful to creating portals
+
+```tsx
+const ZoomButton = () => {
+  const map = useGoogleMap();
+
+  return createPortal(
+    usePane('overlayMouseTarget'),
+    <button
+      onClick={() => {
+        map.setZoom(7);
+      }}
+    >
+      zoom
+    </button>
+  );
+};
+
+const Map = () => (
+  <GoogleMap>
+    <ZoomButton />
+  </GoogleMap>
+);
+```
+
+---
+
+### useGoogleMapsLoad
+
+```ts
+const useGoogleMapsLoad: {
+  (): void;
+  <L extends keyof GoogleMapsLibraries>(library: L): GoogleMapsLibraries[L];
+  <const A extends (keyof GoogleMapsLibraries)[]>(
+    ...libraries: A
+  ): {
+    [Index in keyof A]: GoogleMapsLibraries[A[Index]];
+  };
+};
+```
+
+Hook for loading google maps script or specific library/libraries
+
+> Works only for [Suspense](https://react.dev/reference/react/Suspense) wrapped components
+
+---
+
+### useGoogleMapsCompletion
+
+```ts
+const useGoogleMapsCompletion: {
+  (): void;
+  <L extends GoogleMapsLibrary>(library: L): GoogleMapsLibraries[L];
+  <const A extends GoogleMapsLibrary[]>(
+    ...libraries: A
+  ): {
+    [Index in keyof A]: GoogleMapsLibraries[A[Index]];
+  };
+};
+```
+
+Hook for awaiting loading of google.maps script or specific library/libraries
+
+> Works only for [Suspense](https://react.dev/reference/react/Suspense) wrapped components
+
+---
+
+### useGoogleMapsStatus
+
+```ts
+const useGoogleMapsStatus: (
+  library?: GoogleMapsLibrary
+) => 'none' | 'loading' | 'loaded' | 'error';
+```
+
+Hook for getting status of google.maps script or specific library
+
+> It not provokes loading of script/library
 
 ---
 
 ### useMarkerCluster
 
 This hook has been moved to [use-marker-cluster](https://www.npmjs.com/package/use-marker-cluster) library
-
----
-
-## Service hooks
-
-All hooks below implement google maps services, hooks can be called even if `google.maps` is not loaded yet, but methods themselves cannot be import until `google.maps` is loaded
-
-```ts
-const { geocode } = useGeocoder(); // throws error if google.maps not loaded yet
-
-const geocoder = useGeocoder(); // no error will be throw
-
-const fn = async () => {
-  await GoogleMapsLoader.completion;
-
-  const res = await geocoder.geocode(someArg);
-};
-```
-
-### useAutocompleteService
-
-[AutocompleteService](https://developers.google.com/maps/documentation/javascript/reference/places-autocomplete-service#AutocompleteService) implementation
-
-```ts
-const useAutocompleteService: () => google.maps.places.AutocompleteService;
-```
-
----
-
-### useDirectionService
-
-[DirectionService](https://developers.google.com/maps/documentation/javascript/reference/directions#DirectionsService) implementation
-
-```ts
-const useDirectionService: () => google.maps.places.DirectionsService;
-```
-
----
-
-### useDistanceMatrixService
-
-[DistanceMatrixService](https://developers.google.com/maps/documentation/javascript/reference/distance-matrix#DistanceMatrixService) implementation
-
-```ts
-const useDistanceMatrixService: () => google.maps.places.DistanceMatrixService;
-```
-
----
-
-### useElevationService
-
-[ElevationService](https://developers.google.com/maps/documentation/javascript/reference/elevation#ElevationService) implementation
-
-```ts
-const useElevationService: () => google.maps.ElevationService;
-```
-
----
-
-### useGeocoder
-
-[Geocoder](https://developers.google.com/maps/documentation/javascript/reference/geocoder#Geocoder) implementation
-
-```ts
-const useGeocoder: () => google.maps.Geocoder;
-```
-
----
-
-### useMaxZoomService
-
-[MaxZoomService](https://developers.google.com/maps/documentation/javascript/reference/max-zoom#MaxZoomService) implementation
-
-```ts
-const useMaxZoomService: () => google.maps.MaxZoomService;
-```
-
----
-
-### usePlacesService
-
-[PlacesService](https://developers.google.com/maps/documentation/javascript/reference/places-service#PlacesService) implementation
-
-```ts
-const usePlacesService: (
-  container?: null | HTMLElement | google.maps.Map | (() => HTMLElement)
-) => google.maps.places.PlacesService;
-```
-
-| Name         | Description                                                                       | Default |
-| :----------- | :-------------------------------------------------------------------------------- | :------ |
-| `container?` | container to render the attributions for the results or function which returns it | `null`  |
-
----
-
-### useStreetViewService
-
-[StreetViewService](https://developers.google.com/maps/documentation/javascript/reference/street-view-service#StreetViewService) implementation
-
-```ts
-const useStreetViewService: () => google.maps.StreetViewService;
-```
 
 ---
 
