@@ -63,7 +63,11 @@ const useHandlersAndProps = <
 
         useEffect(() => {
           if (value) {
-            const eventName = key.slice(2, -7).toLowerCase() + CHANGED;
+            const eventName = (
+              key.endsWith('Changed')
+                ? key.slice(2, -7) + CHANGED
+                : key.slice(2)
+            ).toLowerCase();
 
             let fn = value;
 

@@ -123,6 +123,9 @@ const CGoogleMap = (p: {
               zlupa
             </div>
           }
+          onClick={() => {
+            console.log('wad');
+          }}
           onBoundsChanged={function (bounds) {
             if (bounds) {
               const sw = bounds.getSouthWest();

@@ -1,6 +1,6 @@
 {
   "name": "google-maps-js-api-react",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Fast, tree-shakable, and light-weight React components and hooks for integrating Google Maps API functionality",
   "author": "Krombik",
   "license": "MIT",
@@ -50,7 +50,7 @@
     "@types/react-dom": "^18.3.0",
     "google-maps-js-api-loader": "^4.0.2",
     "prettier": "^3.2.5",
-    "tsup": "^8.0.2",
+    "tsup": "^8.1.0",
     "typescript": "^5.4.5"
   },
   "keywords": [
