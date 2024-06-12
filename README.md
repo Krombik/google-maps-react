@@ -36,8 +36,6 @@ import { useCallback } from 'react';
 GoogleMapsLoader({ apiKey: API_KEY }, { defer: true });
 
 const Map = () => {
-  const status = useGoogleMapsLoader();
-
   const handleClick = useCallback(() => console.log('clicked'), []);
 
   return (
