@@ -4,6 +4,7 @@ import handleComponent from '../utils/handleComponent';
 
 export type MarkerProps = ComponentProps<typeof Marker>;
 
+/** @deprecated */
 const Marker = handleComponent<
   google.maps.Marker,
   {

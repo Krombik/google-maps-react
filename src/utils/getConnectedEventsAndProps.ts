@@ -8,7 +8,7 @@ const getConnectedEventsAndProps = <Instance>(
   const connectedEventsAndProps = new Map<string, UnGet<keyof Instance>>();
 
   if (arr) {
-    for (let i = arr.length; i--; ) {
+    for (let i = 0; i < arr.length; i++) {
       const item = arr[i];
 
       connectedEventsAndProps.set(
