@@ -8,7 +8,7 @@ import {
 import { createPortal } from 'react-dom';
 import noop from 'lodash.noop';
 import useConst from 'react-helpful-utils/useConst';
-import GetPaneContext from '../utils/GetPaneContext';
+import PanesContext from '../utils/PanesContext';
 import { GoogleMapsLoader } from 'google-maps-js-api-loader';
 import { MAPS } from '../utils/constants';
 import setRef from 'react-helpful-utils/setRef';
@@ -105,7 +105,7 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
 
         return createPortal(
           props.render(ref),
-          useContext(GetPaneContext)(props.mapPaneLayer || 'overlayMouseTarget')
+          useContext(PanesContext)[props.mapPaneLayer || 'overlayMouseTarget']
         );
       };
     })(props)

@@ -5,9 +5,11 @@ import {
   type FC,
   type PropsWithChildren,
   type SuspenseProps,
+  type ForwardedRef,
+  type ReactElement,
   Suspense,
   forwardRef,
-  useContext,
+  useMemo,
   useState,
 } from 'react';
 import type {
@@ -15,20 +17,18 @@ import type {
   GetValue,
   DragEventName,
   MouseHandlers,
-  PreventLoadProps,
 } from '../types';
 import MapContext from '../utils/MapContext';
 import useHandlersAndProps from '../utils/useHandlersAndProps';
 import getConnectedEventsAndProps from '../utils/getConnectedEventsAndProps';
-import useConst from 'react-helpful-utils/useConst';
 import setRef from 'react-helpful-utils/setRef';
 import { GoogleMapsLoader } from 'google-maps-js-api-loader';
 import { MAPS } from '../utils/constants';
 import noop from 'lodash.noop';
-import GetPaneContext from '../utils/GetPaneContext';
+import PanesContext from '../utils/PanesContext';
 import handleHas from '../utils/handleHas';
-import toKey from 'keyweaver';
 import handleRef from '../utils/handleRef';
+import { jsx } from 'react/jsx-runtime';
 
 type Props = CombineProps<
   google.maps.Map,
@@ -72,10 +72,11 @@ type Props = CombineProps<
   }
 > &
   Pick<ComponentProps<'div'>, 'className' | 'style' | 'id'> &
-  Pick<SuspenseProps, 'fallback'> &
-  PreventLoadProps;
+  Pick<SuspenseProps, 'fallback'>;
 
 export type GoogleMapProps = ComponentProps<typeof GoogleMap>;
+
+const MAX_LAT = (Math.atan(Math.sinh(Math.PI)) * 180) / Math.PI;
 
 const connectedEventsAndProps = getConnectedEventsAndProps<google.maps.Map>([
   'center',
@@ -93,170 +94,170 @@ const isKeyOmitted = handleHas<GoogleMapProps>([
   'children',
   'defaultOptions',
   'fallback',
-  'preventLoad',
 ]);
 
-const mapsStorage = new Map<
-  string,
-  [mapsInUse: Set<number>, maps: (google.maps.Map | google.maps.MapPanes)[]]
->();
-
-const PropsHandler: FC<PropsWithChildren<Props>> = (props) => {
-  useHandlersAndProps<PropsWithChildren<Props>, google.maps.Map>(
-    props,
-    connectedEventsAndProps,
-    isKeyOmitted
-  )(useContext(MapContext));
-
-  return null;
+type RenderMap = ((
+  props: PropsWithChildren<Props>,
+  ref: ForwardedRef<google.maps.Map>
+) => ReactElement) & {
+  _isFree?: boolean;
 };
 
+const mapsStorage = new Map<string, Array<RenderMap>>();
+
 const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
-  (props, ref) =>
-    useConst(() => {
-      const { preventLoad } = props;
+  (props, ref) => {
+    const { defaultOptions = {} } = props;
 
-      let getPane: (pane: keyof google.maps.MapPanes) => Element;
+    const key = `${defaultOptions.backgroundColor || ''},${
+      defaultOptions.controlSize || 40
+    },${defaultOptions.mapId || ''},${defaultOptions.renderingType || ''}`;
 
-      let map: google.maps.Map;
+    return useMemo(() => {
+      if (!mapsStorage.has(key)) {
+        mapsStorage.set(key, []);
+      }
 
-      let error: any;
+      const components = mapsStorage.get(key)!;
 
-      let forceRerender: (value: {}) => void;
+      for (let i = 0; i < components.length; i++) {
+        const render = components[i];
+
+        if (render._isFree) {
+          return render;
+        }
+      }
+
+      let map: google.maps.Map | undefined;
+
+      let panes: google.maps.MapPanes | undefined;
+
+      let mapPromise: Promise<void> | undefined;
+
+      let resolveMap: () => void = noop;
+
+      let isPanesPending = true;
+
+      const Content: FC<PropsWithChildren> = (props) => {
+        const forceRerender = useState<{}>()[1];
+
+        if (panes) {
+          return (
+            <MapContext.Provider value={map!}>
+              <PanesContext.Provider value={panes}>
+                {props.children}
+              </PanesContext.Provider>
+            </MapContext.Provider>
+          );
+        }
+
+        if (isPanesPending) {
+          isPanesPending = false;
+
+          const overlayView = new (GoogleMapsLoader.get(MAPS)!.OverlayView)();
+
+          overlayView.onRemove = overlayView.draw = noop;
+
+          overlayView.onAdd = () => {
+            panes = overlayView.getPanes()!;
+
+            overlayView.setMap(null);
+
+            forceRerender(panes);
+          };
+
+          overlayView.setMap(map!);
+        }
+
+        return null;
+      };
+
+      const SuspendedGoogleMap: FC<PropsWithChildren<Props>> = (props) => {
+        if (map) {
+          const { children } = props;
+
+          useHandlersAndProps<PropsWithChildren<Props>, google.maps.Map>(
+            props,
+            connectedEventsAndProps,
+            isKeyOmitted
+          )(map);
+
+          return children ? <Content>{children}</Content> : null;
+        }
+
+        if (GoogleMapsLoader.getStatus(MAPS) == 'error') {
+          throw GoogleMapsLoader.getError(MAPS);
+        }
+
+        if (!mapPromise) {
+          mapPromise = new Promise((resolve) => {
+            resolveMap = () => {
+              resolveMap = noop;
+
+              mapPromise = undefined;
+
+              resolve();
+            };
+          });
+        }
+
+        throw mapPromise;
+      };
 
       const divRef = handleRef<HTMLDivElement>((el) => {
         let isAlive = true;
 
-        let isExisted: boolean;
-
-        const options: google.maps.MapOptions = {
+        const options = {
           ...props.defaultOptions,
           ...props,
         };
 
-        const key = toKey([
-          options.backgroundColor || null,
-          options.controlSize || 40,
-          options.mapId || null,
-          options.renderingType || null,
-        ]);
+        const _ref = ref;
 
-        if (!mapsStorage.has(key)) {
-          mapsStorage.set(key, [new Set(), []]);
-        }
+        props = ref = undefined!;
 
-        const [mapsInUse, maps] = mapsStorage.get(key)!;
+        if (map) {
+          map.setOptions(options);
 
-        for (
-          var currMapIndex = 0;
-          mapsInUse.has(currMapIndex);
-          currMapIndex += 2
-        ) {}
+          map.moveCamera({});
 
-        mapsInUse.add(currMapIndex);
+          el.prepend(map.getDiv());
 
-        map = maps[currMapIndex] as google.maps.Map;
-
-        const handleMap = () => {
-          if (isAlive) {
-            isExisted = true;
-
-            if (map) {
-              delete options.backgroundColor;
-              delete options.controlSize;
-              delete options.mapId;
-              delete options.renderingType;
-
-              map.setOptions(options);
-
-              map.moveCamera({});
-            } else {
+          setRef(_ref, map);
+        } else {
+          const handleMap = () => {
+            if (isAlive) {
               const div = document.createElement('div');
 
               div.style.width = div.style.height = '100%';
 
-              maps[currMapIndex] = map = new (GoogleMapsLoader.get(MAPS)!.Map)(
-                div,
-                options
-              );
+              map = new (GoogleMapsLoader.get(MAPS)!.Map)(div, options);
+
+              resolveMap();
+
+              el.prepend(div);
+
+              setRef(_ref, map);
             }
+          };
 
-            let promise: Promise<void> | undefined;
-
-            let panes = maps[currMapIndex + 1] as google.maps.MapPanes;
-
-            getPane = (pane) => {
-              if (panes) {
-                return panes[pane];
-              }
-
-              if (!promise) {
-                promise = new Promise<void>((resolve) => {
-                  const overlayView = new (GoogleMapsLoader.get(
-                    MAPS
-                  )!.OverlayView)();
-
-                  overlayView.onRemove = overlayView.draw = noop;
-
-                  overlayView.onAdd = () => {
-                    maps[currMapIndex + 1] = panes = overlayView.getPanes()!;
-
-                    overlayView.setMap(null);
-
-                    promise = undefined;
-
-                    resolve();
-                  };
-
-                  overlayView.setMap(map);
-                });
-              }
-
-              throw promise;
-            };
-
-            el.prepend(map.getDiv());
-
-            setRef(ref, map);
-
-            forceRerender({});
-          }
-        };
-
-        if (map) {
-          handleMap();
-        } else {
-          const status = GoogleMapsLoader.getStatus(MAPS);
-
-          if (status == 'loaded') {
+          if (GoogleMapsLoader.getStatus(MAPS) == 'loaded') {
             handleMap();
           } else {
-            const onError = (err: any) => {
-              if (isAlive) {
-                error = err;
-
-                forceRerender({});
-              }
-            };
-
-            if (status != 'error') {
-              (preventLoad
-                ? GoogleMapsLoader.getCompletion
-                : GoogleMapsLoader.load)(MAPS).then(handleMap, onError);
-            } else {
-              onError(GoogleMapsLoader.getError(MAPS));
-            }
+            GoogleMapsLoader.load(MAPS).then(handleMap, () => {
+              resolveMap();
+            });
           }
         }
 
         return () => {
           isAlive = false;
 
-          mapsInUse.delete(currMapIndex);
+          render._isFree = true;
 
-          if (isExisted) {
-            const MAX_LAT = (Math.atan(Math.sinh(Math.PI)) * 180) / Math.PI;
+          resolveMap();
 
+          if (map) {
             const { ControlPosition, MapTypeId } = google.maps;
 
             map.setOptions({
@@ -273,7 +274,7 @@ const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
               gestureHandling: 'auto',
               headingInteractionEnabled: false,
               isFractionalZoomEnabled:
-                map.getRenderingType() === google.maps.RenderingType.VECTOR,
+                map.getRenderingType() == google.maps.RenderingType.VECTOR,
               keyboardShortcuts: true,
               mapTypeControl: true,
               mapTypeControlOptions: {
@@ -324,43 +325,39 @@ const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
 
             map.moveCamera({ tilt: 0, heading: 0 });
 
-            setRef(ref, null);
+            setRef(_ref, null);
           }
         };
       });
 
-      return (props: PropsWithChildren<Props>) => {
-        if (error) {
-          throw error;
+      const render: RenderMap = (_props, _ref) => {
+        if (render._isFree) {
+          props = _props;
+
+          ref = _ref;
+
+          render._isFree = false;
         }
-
-        const { children, fallback } = props;
-
-        forceRerender = useState<{}>()[1];
 
         return (
           <div
             ref={divRef}
-            className={props.className}
-            style={props.style}
-            id={props.id}
+            className={_props.className}
+            style={_props.style}
+            id={_props.id}
           >
-            {map ? (
-              <MapContext.Provider value={map}>
-                <PropsHandler {...props} />
-                {children && (
-                  <GetPaneContext.Provider value={getPane}>
-                    <Suspense fallback={fallback || null}>{children}</Suspense>
-                  </GetPaneContext.Provider>
-                )}
-              </MapContext.Provider>
-            ) : (
-              fallback
-            )}
+            <Suspense fallback={_props.fallback || null}>
+              {jsx(SuspendedGoogleMap, _props)}
+            </Suspense>
           </div>
         );
       };
-    })(props)
+
+      components.push(render);
+
+      return render;
+    }, [key])(props, ref);
+  }
 );
 
 export default GoogleMap;

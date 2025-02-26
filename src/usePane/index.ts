@@ -1,7 +1,7 @@
 import { useContext } from 'react';
-import GetPaneContext from '../utils/GetPaneContext';
+import PanesContext from '../utils/PanesContext';
 
 const usePane = (pane: keyof google.maps.MapPanes) =>
-  useContext(GetPaneContext)(pane);
+  useContext(PanesContext)[pane];
 
 export default usePane;
