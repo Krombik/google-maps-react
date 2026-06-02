@@ -12,3 +12,18 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* ariakit Dialog open/close animation — opacity fade.
+   Plain CSS (not a styling lib): inline style can't target [data-enter]. */
+.map-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.map-dialog[data-enter] {
+  opacity: 1;
+}

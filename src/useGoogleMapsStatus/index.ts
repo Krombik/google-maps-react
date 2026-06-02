@@ -19,11 +19,19 @@ const useGoogleMapsStatus = (library?: GoogleMapsLibrary) => {
     }
 
     if (currentStatus != 'loaded' && currentStatus != 'error') {
+      let isAlive = true;
+
       GoogleMapsLoader.getCompletion(library!).finally(() => {
-        setStatus(GoogleMapsLoader.getStatus(library!));
+        if (isAlive) {
+          setStatus(GoogleMapsLoader.getStatus(library!));
+        }
       });
+
+      return () => {
+        isAlive = false;
+      };
     }
-  }, []);
+  }, [library]);
 
   return status;
 };

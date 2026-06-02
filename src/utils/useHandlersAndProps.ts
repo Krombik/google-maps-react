@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { UnGet } from '../types';
-import useConst from 'react-helpful-utils/useConst';
 import { CHANGED } from './constants';
+import noop from 'lodash.noop';
 
 /** @internal */
 const useHandlersAndProps = <
@@ -13,15 +13,19 @@ const useHandlersAndProps = <
   props: Props,
   connectedPairs: Map<string, UnGet<keyof Instance>>,
   isKeyOmitted: (key: keyof Props) => boolean
-) =>
-  useConst(() => {
-    const isTriggeredBySetStateSet = new Set<string>();
+) => {
+  const bindRef = useRef<(props: Props) => (instance: Instance) => void>(
+    noop as any
+  );
+
+  if (bindRef.current == noop) {
+    const selfUpdatedKeys = new Set<string>();
 
     const handlersList: string[] = [];
 
     const propsList: string[] = [];
 
-    let isUpdated: boolean;
+    let isMounted = false;
 
     let instance: Instance;
 
@@ -31,15 +35,15 @@ const useHandlersAndProps = <
       }
     }
 
-    return (props: Props) => {
+    bindRef.current = (props) => {
       for (let i = propsList.length; i--; ) {
         const key = propsList[i];
 
         const value: any = props[key];
 
         useLayoutEffect(() => {
-          if (isUpdated) {
-            isTriggeredBySetStateSet.add(key);
+          if (isMounted) {
+            selfUpdatedKeys.add(key);
 
             instance.setOptions({ [key]: value });
           }
@@ -48,10 +52,10 @@ const useHandlersAndProps = <
 
       if (propsList.length) {
         useLayoutEffect(() => {
-          isUpdated = true;
+          isMounted = true;
 
           return () => {
-            isUpdated = false;
+            isMounted = false;
           };
         }, []);
       }
@@ -72,21 +76,21 @@ const useHandlersAndProps = <
             let fn = value;
 
             if (connectedPairs.has(eventName)) {
-              const dependBy = connectedPairs.get(eventName)!;
+              const boundProp = connectedPairs.get(eventName)!;
 
               const boundFn = fn.bind(instance);
 
-              if (dependBy in props) {
-                isTriggeredBySetStateSet.delete(dependBy);
+              if (boundProp in props) {
+                selfUpdatedKeys.delete(boundProp);
 
                 fn = () => {
-                  if (!isTriggeredBySetStateSet.delete(dependBy)) {
-                    boundFn(instance.get(dependBy));
+                  if (!selfUpdatedKeys.delete(boundProp)) {
+                    boundFn(instance.get(boundProp));
                   }
                 };
               } else if (fn.length) {
                 fn = () => {
-                  boundFn(instance.get(dependBy));
+                  boundFn(instance.get(boundProp));
                 };
               }
             }
@@ -98,11 +102,14 @@ const useHandlersAndProps = <
         }, [value]);
       }
 
-      return (_instance: Instance) => {
+      return (_instance) => {
         instance = _instance;
       };
     };
-  })(props);
+  }
+
+  return bindRef.current(props);
+};
 
 /** @internal */
 export default useHandlersAndProps;

@@ -1,18 +1,20 @@
+'use client';
+
 import {
   type RefCallback,
   type ReactElement,
   useContext,
   forwardRef,
   useLayoutEffect,
+  useRef,
 } from 'react';
 import { createPortal } from 'react-dom';
 import noop from 'lodash.noop';
-import useConst from 'react-helpful-utils/useConst';
 import PanesContext from '../utils/PanesContext';
 import { GoogleMapsLoader } from 'google-maps-js-api-loader';
 import { MAPS } from '../utils/constants';
 import setRef from 'react-helpful-utils/setRef';
-import handleRef from '../utils/handleRef';
+import createRefCallback from '../utils/createRefCallback';
 import MapContext from '../utils/MapContext';
 
 export type OverlayViewProps = {
@@ -41,8 +43,12 @@ export type OverlayViewProps = {
 let _OverlayView: typeof google.maps.OverlayView;
 
 const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
-  (props, outerRef) =>
-    useConst(() => {
+  (props, outerRef) => {
+    const renderRef = useRef<(props: OverlayViewProps) => ReactElement>(
+      noop as any
+    );
+
+    if (renderRef.current == noop) {
       let draw = noop;
 
       let lat: number;
@@ -53,7 +59,7 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
 
       const { preventMapHits, preventMapHitsAndGestures } = props;
 
-      const ref = handleRef<HTMLElement>((el) => {
+      const ref = createRefCallback<HTMLElement>((el) => {
         if (!_OverlayView) {
           _OverlayView = GoogleMapsLoader.get(MAPS)!.OverlayView;
         }
@@ -74,7 +80,7 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
 
         style.position = 'absolute';
 
-        draw = () => {
+        overlayView.draw = draw = () => {
           const pos = getProjection().fromLatLngToDivPixel({ lat, lng });
 
           if (pos) {
@@ -82,8 +88,6 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
             style.top = pos.y + 'px';
           }
         };
-
-        overlayView.draw = draw;
 
         overlayView.setMap(map);
 
@@ -98,7 +102,7 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
         };
       });
 
-      return (props: OverlayViewProps) => {
+      renderRef.current = (props) => {
         map = useContext(MapContext);
 
         useLayoutEffect(draw, [(lat = props.lat), (lng = props.lng)]);
@@ -108,7 +112,10 @@ const OverlayView = forwardRef<HTMLElement, OverlayViewProps>(
           useContext(PanesContext)[props.mapPaneLayer || 'overlayMouseTarget']
         );
       };
-    })(props)
+    }
+
+    return renderRef.current(props);
+  }
 );
 
 export default OverlayView;

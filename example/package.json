@@ -10,13 +10,14 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "@ariakit/react": "0.4.26",
     "@types/node": "link:../node_modules/@types/node",
     "@types/react": "^18.0.9",
     "@types/react-dom": "^18.0.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
     "react-scripts": "^5.0.1",
-    "typescript": "^5.4.5",
+    "typescript": "6.0.3",
     "google-maps-js-api-react": "link:../build",
     "use-marker-cluster": "^1.0.1"
   },

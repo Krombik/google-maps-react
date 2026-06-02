@@ -1,488 +1,250 @@
 # google-maps-js-api-react
 
-> This library use [Suspense](https://react.dev/reference/react/Suspense), so it requires React v18 or later.
+A fast, lightweight, tree-shakeable set of React components and hooks for the
+[Google Maps JavaScript API](https://developers.google.com/maps/documentation/javascript).
 
-This package provides a simple and efficient way to work with the Google Maps API, enabling map-based applications to be built with ease. With minimal setup, Google Maps functionality can be integrated into React applications using the components and hooks provided by this package. The package is designed to be fast, lightweight, and tree-shakeable, providing a performant solution for integrating Google Maps into React applications.
+- 🧩 Declarative components for the map, markers, overlays, shapes and layers.
+- ♻️ The map instance is **pooled and reused** across mounts — no costly re-initialization.
+- ⏳ Libraries load on demand via [Suspense](https://react.dev/reference/react/Suspense).
+- 🌳 Fully tree-shakeable — you ship only what you import.
+
+> Requires React 18+. Map-rendering components return `null` during SSR and
+> mount on the client.
 
 ## Installation
 
 using npm:
 
-```
-npm i --save google-maps-js-api-react google-maps-js-api-loader && npm install --save-dev @types/google.maps
+```sh
+npm i --save google-maps-js-api-react google-maps-js-api-loader && npm i --save-dev @types/google.maps
 ```
 
 or yarn:
 
-```
-yarn add i google-maps-js-api-react google-maps-js-api-loader && yarn add -D @types/google.maps
+```sh
+yarn add google-maps-js-api-react google-maps-js-api-loader && yarn add -D @types/google.maps
 ```
 
 or pnpm:
 
-```
-pnpm add i google-maps-js-api-react google-maps-js-api-loader && pnpm add -D @types/google.maps
+```sh
+pnpm add google-maps-js-api-react google-maps-js-api-loader && pnpm add -D @types/google.maps
 ```
 
----
-
-## Example
+## Quick start
 
 ```tsx
-import { GoogleMap, Marker, OverlayView } from 'google-maps-js-api-react';
+import GoogleMap from 'google-maps-js-api-react/GoogleMap';
+import AdvancedMarker from 'google-maps-js-api-react/AdvancedMarker';
+import OverlayView from 'google-maps-js-api-react/OverlayView';
 import { GoogleMapsLoader } from 'google-maps-js-api-loader';
-import { useCallback } from 'react';
 
-GoogleMapsLoader({ apiKey: API_KEY }, { defer: true });
+// Configure the loader once, anywhere before the first render.
+GoogleMapsLoader({ key: API_KEY });
 
-const Map = () => {
-  const handleClick = useCallback(() => console.log('clicked'), []);
+const center = { lat: -31.56391, lng: 147.154312 };
 
-  return (
-    <GoogleMap
-      defaultOptions={{
-        center: { lat: -31.56391, lng: 147.154312 },
-        zoom: 6,
-      }}
-    >
-      <Marker
-        position={{ lat: -31.56391, lng: 147.154312 }}
-        onClick={handleClick}
-      />
-      <OverlayView
-        lat={-37.75}
-        lng={145.116667}
-        preventMapHits
-        render={(ref) => (
-          <div ref={ref} style={{ background: 'red' }} onClick={handleClick}>
-            dot
-          </div>
-        )}
-      />
-    </GoogleMap>
-  );
-};
+const Map = () => (
+  <GoogleMap
+    style={{ width: '100%', height: '100vh' }}
+    defaultOptions={{ mapId: 'YOUR_MAP_ID' }}
+    center={center}
+    zoom={6}
+    onClick={() => console.log('map clicked')}
+  >
+    {/* a customizable pin */}
+    <AdvancedMarker
+      position={center}
+      pin={{ background: '#34a853', glyph: 'A' }}
+    />
+
+    {/* fully custom HTML content */}
+    <AdvancedMarker position={{ lat: -37.75, lng: 145.116667 }}>
+      <div className='price-tag'>$300</div>
+    </AdvancedMarker>
+
+    {/* arbitrary DOM anchored to a coordinate */}
+    <OverlayView
+      lat={-33.87}
+      lng={151.21}
+      render={(ref) => <div ref={ref}>dot</div>}
+    />
+  </GoogleMap>
+);
 ```
 
-> **All components (except [OverlayView](#overlayview)) is not designed to implement "controlled" React logic.** For instance, consider the following example:
->
-> ```jsx
-> const Map = () => {
->   const [zoom, setZoom] = useState(5);
->
->   return <GoogleMap zoom={zoom} />;
-> };
-> ```
->
-> Here, the zoom level of the map is not limited to `5` and can be modified by the user. However, if the value of the zoom variable is changed, the zoom level of the map will also be modified accordingly.
+## Core concepts
 
-## API
+**Loading & Suspense.** Components throw to load the library they need, so render
+them under a [`Suspense`](https://react.dev/reference/react/Suspense) boundary
+(`GoogleMap` has one built in via its `fallback` prop). Components from secondary
+libraries (`AdvancedMarker`, `DrawingManager`, the Street View components…)
+accept `preventLoad` to wait for an existing load instead of triggering one.
 
-- [Components](#components)
-  - [GoogleMap](#googlemap)
-  - [OverlayView](#overlayview)
-  - [Marker](#marker)
-  - [Polygon](#polygon)
-  - [Polyline](#polyline)
-  - [Circle](#circle)
-  - [Rectangle](#rectangle)
-  - [DrawingManager](#drawingmanager)
-  - [HeatmapLayer](#heatmaplayer)
-- [Hooks](#hooks)
-  - [useGoogleMap](#usegooglemap)
-  - [usePane](#usepane)
-  - [useGoogleMapsLoad](#usegooglemapsload)
-  - [useGoogleMapsCompletion](#usegooglemapscompletion)
-  - [useGoogleMapsStatus](#usegooglemapsstatus)
-  - [useMarkerCluster](#usemarkercluster)
+**Props are uncontrolled by default.** A prop sets the value but doesn't lock
+it — the user can still pan, zoom, drag, etc. Changing the prop later _does_
+update the instance.
+
+```jsx
+// zoom starts at 5 but the user can change it freely; setting `zoom` later re-applies
+<GoogleMap zoom={zoom} />
+```
+
+(The exception is content: `OverlayView`'s `render`, `AdvancedMarker`'s `children`.)
+
+**`props` vs `defaultOptions`.** Each component exposes the **settable** options of
+its underlying `google.maps` class as individual, reactive props, plus
+`on*` event handlers (called with the instance as `this`). Options that can only
+be set at **construction** (and the map's pool identity keys) are passed together
+through **`defaultOptions`** — set once, never reactive.
+
+**Map pooling.** `GoogleMap` creates a `google.maps.Map` once and reuses it across
+mounts. The pool is keyed by the `defaultOptions` identity keys
+(`backgroundColor`, `controlSize`, `mapId`, `renderingType`, `minZoom`, `maxZoom`,
+`restriction`) — maps with different values for those get separate instances.
 
 ## Components
 
+| Component                                                                                   | Description                                                  |
+| :------------------------------------------------------------------------------------------ | :----------------------------------------------------------- |
+| [`GoogleMap`](#googlemap)                                                                   | The map.                                                     |
+| [`StreetViewPanorama`](#streetviewpanorama)                                                 | A panorama, standalone or linked to a map.                   |
+| [`AdvancedMarker`](#advancedmarker)                                                         | Modern marker (`AdvancedMarkerElement`) with custom content. |
+| [`OverlayView`](#overlayview)                                                               | Arbitrary DOM anchored to a coordinate.                      |
+| [`Marker`](#marker)                                                                         | ⚠️ Legacy marker (deprecated by Google).                     |
+| [`Polygon`](#shapes) · [`Polyline`](#shapes) · [`Circle`](#shapes) · [`Rectangle`](#shapes) | Vector shapes.                                               |
+| [`TrafficLayer`](#layers) · [`TransitLayer`](#layers) · [`BicyclingLayer`](#layers)         | Built-in overlay layers.                                     |
+| [`StreetViewCoverageLayer`](#layers)                                                        | Street View coverage overlay.                                |
+| [`FeatureLayer`](#featurelayer)                                                             | Data-driven styling (needs a Map ID with DDS).               |
+| [`KmlLayer`](#layers)                                                                       | ⚠️ Renders KML/GeoRSS (deprecated by Google).                |
+| [`DrawingManager`](#drawingmanager)                                                         | Interactive drawing tools.                                   |
+
+All components forward a `ref` to their underlying `google.maps` instance.
+
 ### GoogleMap
 
-[Map](https://developers.google.com/maps/documentation/javascript/reference/map#Map) implementation
+[`google.maps.Map`](https://developers.google.com/maps/documentation/javascript/reference/map#Map). Pooled and reused across mounts.
 
-> It creates instance of [Map](https://developers.google.com/maps/documentation/javascript/reference/map#Map) only once and will reuse this instance whenever possible, avoiding unnecessary reinitialization
+- **Reactive props:** every settable [`MapOptions`](https://developers.google.com/maps/documentation/javascript/reference/map#MapOptions) field (`center`, `zoom`, `heading`, `tilt`, `mapTypeId`, `clickableIcons`, `streetView`, `gestureHandling`, controls, …) + all map event handlers (`onClick`, `onBoundsChanged`, `onZoomChanged`, `onIdle`, `onTilesLoaded`, …).
+- **`defaultOptions`** (creation-only): `backgroundColor`, `controlSize`, `mapId`, `renderingType`, `minZoom`, `maxZoom`, `restriction`.
+- **Layout:** `className`, `style`, `id`. **Loading:** `fallback` (Suspense fallback).
 
-```ts
-type GoogleMapProps = {
-  onBoundsChanged?(
-    this: google.maps.Map,
-    bounds: google.maps.LatLngBounds
-  ): void;
-  onCenterChanged?(this: google.maps.Map, center: google.maps.LatLng): void;
-  onDrag?(this: google.maps.Map): void;
-  onDragEnd?(this: google.maps.Map): void;
-  onDragStart?(this: google.maps.Map): void;
-  onHeadingChanged?(this: google.maps.Map, heading: number): void;
-  onIdle?(this: google.maps.Map): void;
-  onMapTypeIdChanged?(this: google.maps.Map, mapTypeId: string): void;
-  onProjectionChanged?(
-    this: google.maps.Map,
-    projection: google.maps.Projection
-  ): void;
-  onResize?(this: google.maps.Map): void;
-  onTilesLoaded?(this: google.maps.Map): void;
-  onTiltChanged?(this: google.maps.Map, tilt: number): void;
-  onZoomChanged?(this: google.maps.Map, zoom: number): void;
-  onClick?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onContextMenu?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onDoubleClick?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseDown?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseUp?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseMove?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseOut?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onMouseOver?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  onRightClick?(this: google.maps.Map, e: google.maps.MapMouseEvent): void;
-  center?: google.maps.LatLng | google.maps.LatLngLiteral;
-  clickableIcons?: boolean;
-  heading?: number;
-  mapTypeId?: string;
-  streetView?: google.maps.StreetViewPanorama;
-  zoom?: number;
-  defaultOptions?: google.maps.MapOptions;
-  className?: string;
-  style?: React.CSSProperties;
-  children?: React.ReactNode;
-  fallback?: React.ReactNode;
-  preventLoad?: boolean;
-};
-
-const GoogleMap: React.ForwardRefExoticComponent<
-  GoogleMapProps & React.RefAttributes<google.maps.Map>
->;
+```tsx
+<GoogleMap
+  style={mapStyle}
+  defaultOptions={{ mapId: 'DEMO_MAP_ID', minZoom: 3 }}
+  center={center}
+  zoom={6}
+  gestureHandling='greedy'
+  fallback={<Spinner />}
+  ref={mapRef}
+/>
 ```
 
----
+### StreetViewPanorama
+
+[`google.maps.StreetViewPanorama`](https://developers.google.com/maps/documentation/javascript/reference/street-view#StreetViewPanorama). Two modes:
+
+- **Standalone** — renders its own viewport. Style it via `className`/`style`/`id`.
+- **Connected** — when rendered as a child of `GoogleMap`, it drives the map's
+  built-in panorama (the one the pegman opens). It renders no element of its own.
+
+To get a styled, separately-placed panorama that's still linked to a map, render
+a standalone one and pass it to the map's `streetView` prop.
+
+- **Reactive props:** `position`, `pov`, `zoom`, `visible`, `pano` + other [`StreetViewPanoramaOptions`](https://developers.google.com/maps/documentation/javascript/reference/street-view#StreetViewPanoramaOptions) + handlers (`onPositionChanged`, `onPovChanged`, `onStatusChanged`, …). **`defaultOptions`:** `controlSize`. **`preventLoad`.**
+
+```tsx
+// standalone, linked to a map (split view)
+const [pano, setPano] = useState<google.maps.StreetViewPanorama | null>(null);
+
+<GoogleMap streetView={pano} {...othersProps} />
+<StreetViewPanorama ref={setPano} style={{ width: 400, height: 300 }} position={p} />
+```
+
+### AdvancedMarker
+
+[`google.maps.marker.AdvancedMarkerElement`](https://developers.google.com/maps/documentation/javascript/reference/advanced-markers). The modern marker; requires a map with a **Map ID**.
+
+- **Reactive props:** `position`, `title`, `zIndex`, `gmpClickable`, `gmpDraggable`, `collisionBehavior`.
+- **Content:** `children` (any React node) **or** `pin` ([`PinElementOptions`](https://developers.google.com/maps/documentation/javascript/reference/advanced-markers#PinElementOptions): `background`, `borderColor`, `glyph`, `glyphColor`, `scale`). `children` wins; omit both for the default pin.
+- **Handlers:** `onClick` (fires only when `gmpClickable`), `onDrag`, `onDragStart`, `onDragEnd`. **`preventLoad`.**
+
+```tsx
+<AdvancedMarker position={p} gmpClickable onClick={() => open(p)}>
+  <div className="bubble">Hi</div>
+</AdvancedMarker>
+
+<AdvancedMarker position={p} pin={{ background: '#1a73e8', glyph: '7' }} />
+```
 
 ### OverlayView
 
-```ts
-type OverlayViewProps = {
-  mapPaneLayer?: keyof google.maps.MapPanes;
-  preventMapHitsAndGestures?: boolean;
-  preventMapHits?: boolean;
-  lat: number;
-  lng: number;
-  render(ref: React.RefCallback<HTMLElement>): React.ReactElement;
-};
+[`google.maps.OverlayView`](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#OverlayView). Anchors arbitrary DOM to a coordinate — works on any map (no Map ID required).
 
-const OverlayView: FC<OverlayViewProps>;
+| Prop                         | Description                                                                                                               | Default                |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------ | :--------------------- |
+| `lat`, `lng`                 | Position.                                                                                                                 | —                      |
+| `render(ref)`                | Returns the element; attach the given `ref` to it.                                                                        | —                      |
+| `mapPaneLayer?`              | Which [pane](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes) to render into. | `'overlayMouseTarget'` |
+| `preventMapHits?`            | Stop clicks bubbling to the map.                                                                                          | `false`                |
+| `preventMapHitsAndGestures?` | Stop clicks, drags and wheel from reaching the map.                                                                       | `false`                |
+
+```tsx
+<OverlayView lat={0} lng={0} render={(ref) => <Pin ref={ref} />} />
 ```
-
-[OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#OverlayView) implementation
-
-| Name                         | Description                                                                                                                                                                           | Default                |
-| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------- |
-| `mapPaneLayer?`              | see [link](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes)                                                                               | `'overlayMouseTarget'` |
-| `preventMapHits?`            | stops click or tap on the element from bubbling up to the map. Use this to prevent the map from triggering `"click"` events                                                           | `false`                |
-| `preventMapHitsAndGestures?` | stops click, tap, drag, and wheel events on the element from bubbling up to the map. Use this to prevent map dragging and zooming, as well as map `"click"` events                    | `false`                |
-| `render`                     | [render](https://react.dev/reference/react/cloneElement#passing-data-with-a-render-prop) prop, a function that returns a React element and provides the ability to attach `ref` to it |                        |
-
-```jsx
-const SomeComponent = forwardRef(({ children }, ref) => (
-  <div ref={ref}>{children}</div>
-));
-
-const AnotherComponent = () => {
-  return (
-    <OverlayView
-      lat={0}
-      lng={0}
-      render={(ref) => <SomeComponent ref={ref}>hi</SomeComponent>}
-    />
-  );
-};
-```
-
----
 
 ### Marker
 
-[Marker](https://developers.google.com/maps/documentation/javascript/reference/marker#Marker) implementation
+> ⚠️ **Deprecated by Google** — use [`AdvancedMarker`](#advancedmarker).
 
-```ts
-type MarkerProps = {
-  onAnimationChanged?(
-    this: google.maps.Marker,
-    animation: google.maps.Animation
-  ): void;
-  onClickableChanged?(this: google.maps.Marker, clickable: boolean): void;
-  onCursorChanged?(this: google.maps.Marker, cursor: string): void;
-  onDraggableChanged?(this: google.maps.Marker, draggable: boolean): void;
-  onFlatChanged?(this: google.maps.Marker): void;
-  onIconChanged?(
-    this: google.maps.Marker,
-    icon: string | google.maps.Icon | google.maps.Symbol
-  ): void;
-  onPositionChanged?(
-    this: google.maps.Marker,
-    position: google.maps.LatLng
-  ): void;
-  onShapeChanged?(
-    this: google.maps.Marker,
-    shape: google.maps.MarkerShape
-  ): void;
-  onTitleChanged?(this: google.maps.Marker, title: string): void;
-  onVisibleChanged?(this: google.maps.Marker, visible: boolean): void;
-  onZIndexChanged?(this: google.maps.Marker, zIndex: number): void;
-  onClick?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onContextMenu?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDoubleClick?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDrag?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDragEnd?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onDragStart?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseDown?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseMove?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseOut?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseOver?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onMouseUp?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  onRightClick?(this: google.maps.Marker, e: google.maps.MapMouseEvent): void;
-  animation?: google.maps.Animation;
-  clickable?: boolean;
-  cursor?: string;
-  draggable?: boolean;
-  icon?: string | google.maps.Icon | google.maps.Symbol;
-  label?: string | google.maps.MarkerLabel;
-  opacity?: number;
-  position?: google.maps.LatLngLiteral | google.maps.LatLng;
-  shape?: google.maps.MarkerShape;
-  title?: string;
-  visible?: boolean;
-  zIndex?: number;
-  defaultOptions?: google.maps.MarkerOptions;
-};
+[`google.maps.Marker`](https://developers.google.com/maps/documentation/javascript/reference/marker#Marker). Settable [`MarkerOptions`](https://developers.google.com/maps/documentation/javascript/reference/marker#MarkerOptions) as props (`position`, `icon`, `label`, `draggable`, …) + handlers. **`defaultOptions`** (creation-only): `anchorPoint`, `collisionBehavior`, `crossOnDrag`, `optimized`.
 
-const Marker: React.ForwardRefExoticComponent<
-  MarkerProps & React.RefAttributes<google.maps.Marker>
->;
+### Shapes
+
+`Polygon`, `Polyline`, `Circle`, `Rectangle` — settable options of the matching
+`google.maps` class as props, plus mouse/drag handlers and the shape's
+`on*Changed` events.
+
+| Component   | Key props                                                                | Reference                                                                                            |
+| :---------- | :----------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------- |
+| `Polygon`   | `paths`, `editable`, `draggable`, …                                      | [Polygon](https://developers.google.com/maps/documentation/javascript/reference/polygon#Polygon)     |
+| `Polyline`  | `path`, `editable`, `draggable`, …                                       | [Polyline](https://developers.google.com/maps/documentation/javascript/reference/polygon#Polyline)   |
+| `Circle`    | `center`, `radius`, `editable`, … (`onRadiusChanged`, `onCenterChanged`) | [Circle](https://developers.google.com/maps/documentation/javascript/reference/polygon#Circle)       |
+| `Rectangle` | `bounds`, `editable`, … (`onBoundsChanged`)                              | [Rectangle](https://developers.google.com/maps/documentation/javascript/reference/polygon#Rectangle) |
+
+### Layers
+
+Toggle layers — render them inside `GoogleMap` to show, unmount to hide.
+
+| Component                 | Notes                                                                                                                                                                                                                                                                                                                  |
+| :------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TrafficLayer`            | `autoRefresh?` prop. [ref](https://developers.google.com/maps/documentation/javascript/reference/map#TrafficLayer)                                                                                                                                                                                                     |
+| `TransitLayer`            | No props. [ref](https://developers.google.com/maps/documentation/javascript/reference/map#TransitLayer)                                                                                                                                                                                                                |
+| `BicyclingLayer`          | No props. [ref](https://developers.google.com/maps/documentation/javascript/reference/map#BicyclingLayer)                                                                                                                                                                                                              |
+| `StreetViewCoverageLayer` | No props. `preventLoad`. [ref](https://developers.google.com/maps/documentation/javascript/reference/street-view#StreetViewCoverageLayer)                                                                                                                                                                              |
+| `KmlLayer` ⚠️             | `url` + handlers (`onClick`, `onStatusChanged`, `onDefaultviewportChanged`). `defaultOptions`: `preserveViewport`, `screenOverlays`, `suppressInfoWindows`. **Deprecated by Google** — convert KML to GeoJSON and use the [Data layer](https://developers.google.com/maps/documentation/javascript/datalayer) instead. |
+
+### FeatureLayer
+
+[Data-driven styling](https://developers.google.com/maps/documentation/javascript/dds-boundaries/overview). Requires a vector map whose **Map ID** has the feature type enabled.
+
+| Prop          | Description                                                                                                                          |
+| :------------ | :----------------------------------------------------------------------------------------------------------------------------------- |
+| `featureType` | The [`FeatureType`](https://developers.google.com/maps/documentation/javascript/reference/data-driven-styling#FeatureType) to style. |
+| `style?`      | A `FeatureStyleOptions` (same for all) or a `FeatureStyleFunction` (per-feature).                                                    |
+| `onClick?`    | Receives a `FeatureMouseEvent`.                                                                                                      |
+
+```tsx
+<FeatureLayer
+  featureType={google.maps.FeatureType.LOCALITY}
+  style={{ strokeColor: '#810FCB', fillColor: '#810FCB', fillOpacity: 0.2 }}
+/>
 ```
-
----
-
-### Polygon
-
-[Polygon](https://developers.google.com/maps/documentation/javascript/reference/polygon#Polygon) implementation
-
-```ts
-type PolygonProps = {
-  onClick?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onContextMenu?(
-    this: google.maps.Polygon,
-    e: google.maps.PolyMouseEvent
-  ): void;
-  onDoubleClick?(
-    this: google.maps.Polygon,
-    e: google.maps.PolyMouseEvent
-  ): void;
-  onMouseDown?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onMouseMove?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onMouseOut?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onMouseOver?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onMouseUp?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onRightClick?(this: google.maps.Polygon, e: google.maps.PolyMouseEvent): void;
-  onDrag?(this: google.maps.Polygon, e: google.maps.MapMouseEvent): void;
-  onDragEnd?(this: google.maps.Polygon, e: google.maps.MapMouseEvent): void;
-  onDragStart?(this: google.maps.Polygon, e: google.maps.MapMouseEvent): void;
-  draggable?: boolean;
-  editable?: boolean;
-  paths?: any[] | google.maps.MVCArray<any>;
-  visible?: boolean;
-  defaultOptions?: google.maps.PolygonOptions;
-};
-
-const Polygon: React.ForwardRefExoticComponent<
-  PolygonProps & React.RefAttributes<google.maps.Polygon>
->;
-```
-
----
-
-### Polyline
-
-[Polyline](https://developers.google.com/maps/documentation/javascript/reference/polygon#Polyline) implementation
-
-```ts
-type PolylineProps = {
-  onClick?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onContextMenu?(
-    this: google.maps.Polyline,
-    e: google.maps.PolyMouseEvent
-  ): void;
-  onDoubleClick?(
-    this: google.maps.Polyline,
-    e: google.maps.PolyMouseEvent
-  ): void;
-  onMouseDown?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onMouseMove?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onMouseOut?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onMouseOver?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onMouseUp?(this: google.maps.Polyline, e: google.maps.PolyMouseEvent): void;
-  onRightClick?(
-    this: google.maps.Polyline,
-    e: google.maps.PolyMouseEvent
-  ): void;
-  onDrag?(this: google.maps.Polyline, e: google.maps.MapMouseEvent): void;
-  onDragEnd?(this: google.maps.Polyline, e: google.maps.MapMouseEvent): void;
-  onDragStart?(this: google.maps.Polyline, e: google.maps.MapMouseEvent): void;
-  draggable?: boolean;
-  editable?: boolean;
-  path?:
-    | google.maps.MVCArray<google.maps.LatLng>
-    | Array<google.maps.LatLngLiteral | google.maps.LatLng>;
-  visible?: boolean;
-  defaultOptions?: google.maps.PolylineOptions;
-};
-
-const Polyline: React.ForwardRefExoticComponent<
-  PolygonProps & React.RefAttributes<google.maps.Polyline>
->;
-```
-
----
-
-### Circle
-
-[Circle](https://developers.google.com/maps/documentation/javascript/reference/polygon#Circle) implementation
-
-```ts
-type CircleProps = {
-  onCenterChanged?(this: google.maps.Circle, center: google.maps.LatLng): void;
-  onRadiusChanged?(this: google.maps.Circle, radius: number): void;
-  onClick?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onContextMenu?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onDoubleClick?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onDrag?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onDragEnd?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onDragStart?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseDown?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseMove?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseOut?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseOver?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onMouseUp?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  onRightClick?(this: google.maps.Circle, e: google.maps.MapMouseEvent): void;
-  center?: google.maps.LatLngLiteral | google.maps.LatLng;
-  draggable?: boolean;
-  editable?: boolean;
-  radius?: number;
-  visible?: boolean;
-  defaultOptions?: google.maps.CircleOptions;
-};
-
-const Circle: React.ForwardRefExoticComponent<
-  CircleProps & React.RefAttributes<google.maps.Circle>
->;
-```
-
----
-
-### Rectangle
-
-[Rectangle](https://developers.google.com/maps/documentation/javascript/reference/polygon#Rectangle) implementation
-
-```ts
-type RectangleProps = {
-  onBoundsChanged?(
-    this: google.maps.Rectangle,
-    bounds: google.maps.LatLngBounds
-  ): void;
-  onClick?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onContextMenu?(
-    this: google.maps.Rectangle,
-    e: google.maps.MapMouseEvent
-  ): void;
-  onDoubleClick?(
-    this: google.maps.Rectangle,
-    e: google.maps.MapMouseEvent
-  ): void;
-  onDrag?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onDragEnd?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onDragStart?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseDown?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseMove?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseOut?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseOver?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onMouseUp?(this: google.maps.Rectangle, e: google.maps.MapMouseEvent): void;
-  onRightClick?(
-    this: google.maps.Rectangle,
-    e: google.maps.MapMouseEvent
-  ): void;
-  bounds?: google.maps.LatLngBounds | google.maps.LatLngBoundsLiteral;
-  draggable?: boolean;
-  editable?: boolean;
-  visible?: boolean;
-  defaultOptions?: google.maps.RectangleOptions;
-};
-
-const Rectangle: React.ForwardRefExoticComponent<
-  RectangleProps & React.RefAttributes<google.maps.Rectangle>
->;
-```
-
----
 
 ### DrawingManager
 
-[DrawingManager](https://developers.google.com/maps/documentation/javascript/reference/drawing#DrawingManager) implementation
-
-```ts
-type DrawingManagerProps = {
-  onCircleComplete?(
-    this: google.maps.drawing.DrawingManager,
-    circle: google.maps.Circle
-  ): void;
-  onMarkerComplete?(
-    this: google.maps.drawing.DrawingManager,
-    marker: google.maps.Marker
-  ): void;
-  onOverlayComplete?(
-    this: google.maps.drawing.DrawingManager,
-    event: google.maps.drawing.OverlayCompleteEvent
-  ): void;
-  onPolygonComplete?(
-    this: google.maps.drawing.DrawingManager,
-    polygon: google.maps.Polygon
-  ): void;
-  onPolylineComplete?(
-    this: google.maps.drawing.DrawingManager,
-    polyline: google.maps.Polyline
-  ): void;
-  onRectangleComplete?(
-    this: google.maps.drawing.DrawingManager,
-    rectangle: google.maps.Rectangle
-  ): void;
-  drawingMode?: google.maps.drawing.OverlayType;
-  defaultOptions?: google.maps.drawing.DrawingManagerOptions;
-  preventLoad?: boolean;
-};
-
-const DrawingManager: React.ForwardRefExoticComponent<
-  DrawingManagerProps & React.RefAttributes<google.maps.drawing.DrawingManager>
->;
-```
-
-### HeatmapLayer
-
-[HeatmapLayer](https://developers.google.com/maps/documentation/javascript/reference/visualization#HeatmapLayer) implementation
-
-```ts
-type HeatmapLayerProps = {
-  data?:
-    | google.maps.MVCArray<
-        google.maps.LatLng | google.maps.visualization.WeightedLocation
-      >
-    | Array<google.maps.LatLng | google.maps.visualization.WeightedLocation>;
-  defaultOptions?: google.maps.visualization.HeatmapLayerOptions;
-  preventLoad?: boolean;
-};
-
-const HeatmapLayer: React.ForwardRefExoticComponent<
-  HeatmapLayerProps &
-    React.RefAttributes<google.maps.visualization.HeatmapLayer>
->;
-```
-
----
+[`google.maps.drawing.DrawingManager`](https://developers.google.com/maps/documentation/javascript/reference/drawing#DrawingManager). `drawingMode` + [`DrawingManagerOptions`](https://developers.google.com/maps/documentation/javascript/reference/drawing#DrawingManagerOptions) as props, plus the `on*Complete` handlers (`onPolygonComplete`, `onMarkerComplete`, …). **`preventLoad`.**
 
 ## Hooks
 
@@ -492,9 +254,7 @@ const HeatmapLayer: React.ForwardRefExoticComponent<
 const useGoogleMap: () => google.maps.Map;
 ```
 
-Context of [GoogleMap](#googlemap) component
-
----
+The map instance from the nearest [`GoogleMap`](#googlemap).
 
 ### usePane
 
@@ -502,72 +262,22 @@ Context of [GoogleMap](#googlemap) component
 const usePane: (pane: keyof google.maps.MapPanes) => Element;
 ```
 
-Hook to retrieve a specific pane from [GoogleMap](#googlemap), useful to creating portals
+A specific [map pane](https://developers.google.com/maps/documentation/javascript/reference/overlay-view#MapPanes) — handy for portals. Must be used inside a `GoogleMap`.
 
-```tsx
-const ZoomButton = () => {
-  const map = useGoogleMap();
-
-  return createPortal(
-    usePane('overlayMouseTarget'),
-    <button
-      onClick={() => {
-        map.setZoom(7);
-      }}
-    >
-      zoom
-    </button>
-  );
-};
-
-const Map = () => (
-  <GoogleMap>
-    <ZoomButton />
-  </GoogleMap>
-);
-```
-
----
-
-### useGoogleMapsLoad
+### useGoogleMapsLoad / useGoogleMapsCompletion
 
 ```ts
-const useGoogleMapsLoad: {
-  (): void;
-  <L extends keyof GoogleMapsLibraries>(library: L): GoogleMapsLibraries[L];
-  <const A extends (keyof GoogleMapsLibraries)[]>(
-    ...libraries: A
-  ): {
-    [Index in keyof A]: GoogleMapsLibraries[A[Index]];
-  };
-};
+// load (or await) the script / specific libraries; Suspense-based
+function useGoogleMapsLoad<L extends GoogleMapsLibrary>(
+  library: L
+): GoogleMapsLibraries[L];
+function useGoogleMapsLoad<const A extends GoogleMapsLibrary[]>(
+  ...libraries: A
+): { [I in keyof A]: GoogleMapsLibraries[A[I]] };
 ```
 
-Hook for loading google maps script or specific library/libraries
-
-> Works only for [Suspense](https://react.dev/reference/react/Suspense) wrapped components
-
----
-
-### useGoogleMapsCompletion
-
-```ts
-const useGoogleMapsCompletion: {
-  (): void;
-  <L extends GoogleMapsLibrary>(library: L): GoogleMapsLibraries[L];
-  <const A extends GoogleMapsLibrary[]>(
-    ...libraries: A
-  ): {
-    [Index in keyof A]: GoogleMapsLibraries[A[Index]];
-  };
-};
-```
-
-Hook for awaiting loading of google.maps script or specific library/libraries
-
-> Works only for [Suspense](https://react.dev/reference/react/Suspense) wrapped components
-
----
+`useGoogleMapsLoad` triggers loading; `useGoogleMapsCompletion` only awaits an
+existing load. Both work only inside a `Suspense` boundary.
 
 ### useGoogleMapsStatus
 
@@ -577,17 +287,11 @@ const useGoogleMapsStatus: (
 ) => 'none' | 'loading' | 'loaded' | 'error';
 ```
 
-Hook for getting status of google.maps script or specific library
-
-> It not provokes loading of script/library
-
----
+The load status of the script or a specific library. Does not trigger loading.
 
 ### useMarkerCluster
 
-This hook has been moved to [use-marker-cluster](https://www.npmjs.com/package/use-marker-cluster) library
-
----
+Moved to [`use-marker-cluster`](https://www.npmjs.com/package/use-marker-cluster).
 
 ## License
 

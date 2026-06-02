@@ -18,24 +18,6 @@ export type GetValue<
       : never
     : never;
 
-type SetValue<
-  Instance extends Record<SetLiteral<string>, () => any>,
-  Key extends UnSet<keyof Instance>,
-> =
-  SetLiteral<Key> extends keyof Instance
-    ? Instance[SetLiteral<Key>] extends (arg: infer K) => void
-      ? NonNullable<K>
-      : never
-    : never;
-
-type SetLiteral<T extends string> = `set${Capitalize<T>}`;
-
-type UnSet<T> = T extends `set${infer K}`
-  ? '' extends K
-    ? never
-    : Uncapitalize<K>
-  : never;
-
 type _InstanceType<T extends new (...args: any[]) => any> = T extends new (
   ...args: any
 ) => infer R
@@ -78,13 +60,13 @@ export type PathTo<Instance> = ExtractPathFromDeepMemberSearch<
 
 export type ClassType<T> = T extends _InstanceType<infer K> ? K : never;
 
-export type TypicalInstance = google.maps.MVCObject & {
-  setOptions(options: any): void;
-};
+export type MapsInstance = google.maps.MVCObject;
 
-type OptionsOf<Instance extends TypicalInstance> = NonNullable<
-  Parameters<Instance['setOptions']>[0]
->;
+export type OptionsOf<Instance> = Instance extends {
+  setOptions: (...args: any[]) => any;
+}
+  ? NonNullable<Parameters<Instance['setOptions']>[0]>
+  : {};
 
 export type PossibleHandlers = Partial<
   Record<
@@ -138,18 +120,28 @@ export type PossibleHandlers = Partial<
     | 'onOverlayComplete'
     | 'onPolygonComplete'
     | 'onPolylineComplete'
-    | 'onRectangleComplete',
+    | 'onRectangleComplete'
+
+    // KmlLayer
+    | 'onStatusChanged'
+    | 'onDefaultviewportChanged'
+
+    // StreetViewPanorama
+    | 'onCloseclick'
+    | 'onLinksChanged'
+    | 'onPanoChanged'
+    | 'onPovChanged',
     [arg?: any]
   >
 >;
 
-export type PossibleProps<Instance> = Partial<
-  Record<UnGet<keyof Instance>, true>
->;
-
-export type CommonProps<Instance extends TypicalInstance> = {
-  defaultOptions: OptionsOf<Instance>;
-};
+export type DefaultOptionsProps<O> = [keyof O] extends [never]
+  ? {}
+  : {
+      // Creation-only options (set once at construction, not reactively via
+      // `setOptions`).
+      defaultOptions: O;
+    };
 
 export type PreventLoadProps = {
   /**
@@ -159,25 +151,17 @@ export type PreventLoadProps = {
 };
 
 export type CombineProps<
-  Instance extends TypicalInstance,
+  Instance extends MapsInstance,
   H extends PossibleHandlers,
-  P extends PossibleProps<Instance>,
+  ReadonlyKeys extends keyof OptionsOf<Instance> = never,
 > = Partial<
-  HandlersMap<Instance, H> & PropsMap<Instance, P> & CommonProps<Instance>
+  HandlersMap<Instance, H> &
+    Omit<OptionsOf<Instance>, ReadonlyKeys | 'map'> &
+    DefaultOptionsProps<Pick<OptionsOf<Instance>, ReadonlyKeys>>
 >;
 
 type HandlersMap<Instance, T extends Record<string, [arg?: any]>> = {
   [Key in keyof T]: { (this: Instance, ...args: T[Key]): void };
-};
-
-type PropsMap<
-  Instance extends Record<string, any>,
-  T extends Record<string, any>,
-> = {
-  [Key in keyof T]: SetValue<
-    Instance,
-    Key extends UnSet<keyof Instance> ? Key : never
-  >;
 };
 
 export type DragEventName = 'onDrag' | 'onDragEnd' | 'onDragStart';

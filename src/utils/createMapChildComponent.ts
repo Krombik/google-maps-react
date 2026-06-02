@@ -3,17 +3,17 @@ import type {
   ClassType,
   CombineProps,
   PathTo,
-  TypicalInstance,
+  MapsInstance,
   PossibleHandlers,
-  PossibleProps,
   UnGet,
-  CommonProps,
+  DefaultOptionsProps,
   PreventLoadProps,
+  OptionsOf,
 } from '../types';
 import useHandlersAndProps from './useHandlersAndProps';
-import getConnectedEventsAndProps from './getConnectedEventsAndProps';
+import createConnectedEventMap from './createConnectedEventMap';
 import setRef from 'react-helpful-utils/setRef';
-import handleHas from './handleHas';
+import createHas from './createHas';
 import {
   type GoogleMapsLibraries,
   type GoogleMapsLibrary,
@@ -22,25 +22,29 @@ import {
 import { MAPS } from './constants';
 import MapContext from './MapContext';
 
-type MapChild = TypicalInstance & {
+type MapChild = MapsInstance & {
   setMap(map: google.maps.Map | null): void;
 };
 
-const isKeyOmitted = handleHas<CommonProps<MapChild> & PreventLoadProps>([
+const isKeyOmitted = createHas<DefaultOptionsProps<any> & PreventLoadProps>([
   'defaultOptions',
   'preventLoad',
+  'ref',
 ]);
 
 /** @internal */
-const handleComponent = <
+const createMapChildComponent = <
   Instance extends MapChild,
   H extends PossibleHandlers,
-  P extends PossibleProps<Instance>,
+  ReadonlyKeys extends keyof OptionsOf<Instance> = never,
 >(
   instancePath: PathTo<Instance>,
-  connectedProps?: UnGet<keyof Instance>[]
+  connectedProps?: UnGet<keyof Instance>[],
+  // Some layers (TransitLayer, BicyclingLayer) have no constructor options, so
+  // the map can't be passed at construction — attach it with `setMap` instead.
+  viaSetMap?: boolean
 ) => {
-  const connectedEventsAndProps = getConnectedEventsAndProps(connectedProps);
+  const connectedEventsAndProps = createConnectedEventMap(connectedProps);
 
   const [library, className] = instancePath as [
     GoogleMapsLibrary,
@@ -53,7 +57,7 @@ const handleComponent = <
 
   return forwardRef<
     Instance,
-    CombineProps<Instance, H, P> &
+    CombineProps<Instance, H, ReadonlyKeys> &
       (PathTo<Instance> extends [typeof MAPS, string] ? {} : PreventLoadProps)
   >((props, ref) => {
     if (isUnsafe) {
@@ -79,11 +83,17 @@ const handleComponent = <
         InstanceClass = GoogleMapsLoader.get(library)![className];
       }
 
-      const instance: Instance = new InstanceClass({
-        map,
-        ...props.defaultOptions,
-        ...props,
-      });
+      const defaultOptions = (props as { defaultOptions?: any }).defaultOptions;
+
+      const instance: Instance = new InstanceClass(
+        viaSetMap
+          ? { ...defaultOptions, ...props }
+          : { map, ...defaultOptions, ...props }
+      );
+
+      if (viaSetMap) {
+        instance.setMap(map);
+      }
 
       setInstance(instance);
 
@@ -96,7 +106,10 @@ const handleComponent = <
       };
     }, []);
 
-    const setInstance = useHandlersAndProps(
+    // `Instance` may lack `setOptions` (setMap-only layers); the cast is safe
+    // because such instances have no settable props, so `setOptions` is never
+    // called.
+    const setInstance = useHandlersAndProps<any, any>(
       props,
       connectedEventsAndProps,
       isKeyOmitted as any
@@ -107,4 +120,4 @@ const handleComponent = <
 };
 
 /** @internal */
-export default handleComponent;
+export default createMapChildComponent;

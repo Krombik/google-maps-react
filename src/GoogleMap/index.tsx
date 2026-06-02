@@ -9,8 +9,7 @@ import {
   type ReactElement,
   Suspense,
   forwardRef,
-  useMemo,
-  useState,
+  useRef,
 } from 'react';
 import type {
   CombineProps,
@@ -20,14 +19,14 @@ import type {
 } from '../types';
 import MapContext from '../utils/MapContext';
 import useHandlersAndProps from '../utils/useHandlersAndProps';
-import getConnectedEventsAndProps from '../utils/getConnectedEventsAndProps';
+import createConnectedEventMap from '../utils/createConnectedEventMap';
 import setRef from 'react-helpful-utils/setRef';
 import { GoogleMapsLoader } from 'google-maps-js-api-loader';
-import { MAPS } from '../utils/constants';
+import { IS_SERVER, MAPS } from '../utils/constants';
 import noop from 'lodash.noop';
 import PanesContext from '../utils/PanesContext';
-import handleHas from '../utils/handleHas';
-import handleRef from '../utils/handleRef';
+import createHas from '../utils/createHas';
+import createRefCallback from '../utils/createRefCallback';
 import { jsx } from 'react/jsx-runtime';
 
 type Props = CombineProps<
@@ -47,38 +46,113 @@ type Props = CombineProps<
     onTiltChanged: [tilt: GetValue<google.maps.Map, 'tilt'>];
     onZoomChanged: [zoom: GetValue<google.maps.Map, 'zoom'>];
   } & Omit<MouseHandlers, DragEventName>,
-  {
-    center: true;
-    /**
-     * When `false`, map icons are not clickable. A map icon represents a point of interest, also known as a POI.
-     */
-    clickableIcons: true;
-    /**
-     * The heading for aerial imagery in degrees measured clockwise from cardinal direction North. Headings are snapped to the nearest available angle for which imagery is available.
-     */
-    heading: true;
-    /**
-     * The initial Map mapTypeId. Defaults to **ROADMAP**.
-     */
-    mapTypeId: true;
-    /**
-     * A {@link google.maps.StreetViewPanorama StreetViewPanorama} to display when the Street View pegman is dropped on the map. If no panorama is specified, a default {@link google.maps.StreetViewPanorama StreetViewPanorama} will be displayed in the map's div when the pegman is dropped.
-     */
-    streetView: true;
-    /**
-     * The initial Map zoom level. Valid zoom values are numbers from zero up to the supported maximum zoom level. Larger zoom values correspond to a higher resolution.
-     */
-    zoom: true;
-  }
+  | 'backgroundColor'
+  | 'controlSize'
+  | 'mapId'
+  | 'renderingType'
+  | 'minZoom'
+  | 'maxZoom'
+  | 'restriction'
 > &
   Pick<ComponentProps<'div'>, 'className' | 'style' | 'id'> &
   Pick<SuspenseProps, 'fallback'>;
 
 export type GoogleMapProps = ComponentProps<typeof GoogleMap>;
 
-const MAX_LAT = (Math.atan(Math.sinh(Math.PI)) * 180) / Math.PI;
+let defaultMapOptions: google.maps.MapOptions | undefined;
 
-const connectedEventsAndProps = getConnectedEventsAndProps<google.maps.Map>([
+/**
+ * Settable {@link google.maps.MapOptions} reset to their defaults when a pooled
+ * map instance is reused. Built lazily — `google.maps` is not available at
+ * module-eval time. `setOptions` only overrides passed keys, so any omitted key
+ * keeps the previous consumer's value.
+ *
+ * `maxZoom`, `minZoom` and `restriction` are intentionally NOT listed:
+ * - They have no fixed default — Google's default is "auto" (per-location zoom
+ *   range; no restriction). No number resets zoom (any value is a cap), and a
+ *   restriction needs longitude bounds that grey out wide viewports.
+ * - Pushing them through `setOptions` on an already-initialized vector (WebGL)
+ *   map re-clamps the camera and breaks the reattached view (grey tiles) —
+ *   including `null`, which is the documented "clear" value.
+ * Consumers needing a zoom cap or restriction should pass it via `defaultOptions`.
+ */
+const updateOptions = (map: google.maps.Map, options: Props) => {
+  if (!defaultMapOptions) {
+    const { ControlPosition, MapTypeId } = google.maps;
+
+    defaultMapOptions = {
+      cameraControl: true,
+      cameraControlOptions: {
+        position: ControlPosition.INLINE_END_BLOCK_END,
+      },
+      clickableIcons: true,
+      disableDefaultUI: false,
+      disableDoubleClickZoom: false,
+      draggable: true,
+      draggableCursor: null,
+      draggingCursor: null,
+
+      fullscreenControl: true,
+      fullscreenControlOptions: {
+        position: ControlPosition.INLINE_END_BLOCK_START,
+      },
+      gestureHandling: 'auto',
+      heading: 0,
+      headingInteractionEnabled: false,
+      keyboardShortcuts: true,
+      mapTypeControl: true,
+
+      mapTypeControlOptions: {
+        mapTypeIds: [
+          MapTypeId.ROADMAP,
+          MapTypeId.SATELLITE,
+          MapTypeId.HYBRID,
+          MapTypeId.TERRAIN,
+        ],
+        position: ControlPosition.BLOCK_START_INLINE_START,
+        style: google.maps.MapTypeControlStyle.DEFAULT,
+      },
+      mapTypeId: MapTypeId.ROADMAP,
+      noClear: false,
+      panControl: false,
+      panControlOptions: {
+        position: ControlPosition.INLINE_END_BLOCK_END,
+      },
+      rotateControl: false,
+      rotateControlOptions: {
+        position: ControlPosition.INLINE_END_BLOCK_END,
+      },
+      scaleControl: false,
+      scaleControlOptions: {
+        style: google.maps.ScaleControlStyle.DEFAULT,
+      },
+      scrollwheel: true,
+      streetView: null,
+      streetViewControl: true,
+      streetViewControlOptions: {
+        position: ControlPosition.INLINE_END_BLOCK_END,
+      },
+      styles: null,
+      tilt: 0,
+      tiltInteractionEnabled: false,
+      zoomControl: true,
+      zoomControlOptions: {
+        position: ControlPosition.INLINE_END_BLOCK_END,
+      },
+    };
+  }
+
+  map.setOptions({
+    ...defaultMapOptions,
+    isFractionalZoomEnabled:
+      map.getRenderingType() == google.maps.RenderingType.VECTOR,
+    ...options,
+  });
+
+  map.moveCamera({});
+};
+
+const connectedEventsAndProps = createConnectedEventMap<google.maps.Map>([
   'center',
   'heading',
   'mapTypeId',
@@ -87,14 +161,26 @@ const connectedEventsAndProps = getConnectedEventsAndProps<google.maps.Map>([
   'bounds',
 ]);
 
-const isKeyOmitted = handleHas<GoogleMapProps>([
+const isKeyOmitted = createHas<GoogleMapProps>([
   'className',
   'style',
   'id',
   'children',
   'defaultOptions',
   'fallback',
+  'ref',
 ]);
+
+const stringifyRestriction = (restriction: google.maps.MapRestriction) => {
+  const bounds = restriction.latLngBounds as google.maps.LatLngBounds &
+    google.maps.LatLngBoundsLiteral;
+
+  const literal = typeof bounds.toJSON == 'function' ? bounds.toJSON() : bounds;
+
+  return `${literal.north},${literal.south},${literal.east},${literal.west},${
+    restriction.strictBounds ? 1 : 0
+  }`;
+};
 
 type RenderMap = ((
   props: PropsWithChildren<Props>,
@@ -107,25 +193,39 @@ const mapsStorage = new Map<string, Array<RenderMap>>();
 
 const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
   (props, ref) => {
-    const { defaultOptions = {} } = props;
+    if (IS_SERVER) {
+      return null;
+    }
 
-    const key = `${defaultOptions.backgroundColor || ''},${
-      defaultOptions.controlSize || 40
-    },${defaultOptions.mapId || ''},${defaultOptions.renderingType || ''}`;
+    const renderRef = useRef<RenderMap>(noop as any);
 
-    return useMemo(() => {
-      if (!mapsStorage.has(key)) {
-        mapsStorage.set(key, []);
-      }
+    if (renderRef.current == noop) {
+      const defaultOptions = props.defaultOptions || {};
 
-      const components = mapsStorage.get(key)!;
+      const key = `${defaultOptions.controlSize || 40},${
+        defaultOptions.backgroundColor || ''
+      },${defaultOptions.mapId || ''},${defaultOptions.renderingType || ''},${
+        defaultOptions.minZoom || ''
+      },${defaultOptions.maxZoom || ''},${
+        defaultOptions.restriction
+          ? stringifyRestriction(defaultOptions.restriction)
+          : ''
+      }`;
 
-      for (let i = 0; i < components.length; i++) {
-        const render = components[i];
+      let components = mapsStorage.get(key);
 
-        if (render._isFree) {
-          return render;
+      if (components) {
+        for (let i = 0; i < components.length; i++) {
+          const render = components[i];
+
+          if (render._isFree) {
+            renderRef.current = render;
+
+            return render(props, ref);
+          }
         }
+      } else {
+        mapsStorage.set(key, (components = []));
       }
 
       let map: google.maps.Map | undefined;
@@ -134,55 +234,25 @@ const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
 
       let mapPromise: Promise<void> | undefined;
 
-      let resolveMap: () => void = noop;
-
-      let isPanesPending = true;
-
-      const Content: FC<PropsWithChildren> = (props) => {
-        const forceRerender = useState<{}>()[1];
-
-        if (panes) {
-          return (
-            <MapContext.Provider value={map!}>
-              <PanesContext.Provider value={panes}>
-                {props.children}
-              </PanesContext.Provider>
-            </MapContext.Provider>
-          );
-        }
-
-        if (isPanesPending) {
-          isPanesPending = false;
-
-          const overlayView = new (GoogleMapsLoader.get(MAPS)!.OverlayView)();
-
-          overlayView.onRemove = overlayView.draw = noop;
-
-          overlayView.onAdd = () => {
-            panes = overlayView.getPanes()!;
-
-            overlayView.setMap(null);
-
-            forceRerender(panes);
-          };
-
-          overlayView.setMap(map!);
-        }
-
-        return null;
-      };
+      let resolvePromise: () => void = noop;
 
       const SuspendedGoogleMap: FC<PropsWithChildren<Props>> = (props) => {
-        if (map) {
+        if (panes) {
           const { children } = props;
 
           useHandlersAndProps<PropsWithChildren<Props>, google.maps.Map>(
             props,
             connectedEventsAndProps,
             isKeyOmitted
-          )(map);
+          )(map!);
 
-          return children ? <Content>{children}</Content> : null;
+          return children ? (
+            <MapContext.Provider value={map!}>
+              <PanesContext.Provider value={panes}>
+                {children}
+              </PanesContext.Provider>
+            </MapContext.Provider>
+          ) : null;
         }
 
         if (GoogleMapsLoader.getStatus(MAPS) == 'error') {
@@ -191,8 +261,8 @@ const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
 
         if (!mapPromise) {
           mapPromise = new Promise((resolve) => {
-            resolveMap = () => {
-              resolveMap = noop;
+            resolvePromise = () => {
+              resolvePromise = noop;
 
               mapPromise = undefined;
 
@@ -204,38 +274,62 @@ const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
         throw mapPromise;
       };
 
-      const divRef = handleRef<HTMLDivElement>((el) => {
+      const divRef = createRefCallback<HTMLDivElement>((el) => {
         let isAlive = true;
-
-        const options = {
-          ...props.defaultOptions,
-          ...props,
-        };
 
         const _ref = ref;
 
-        props = ref = undefined!;
-
         if (map) {
-          map.setOptions(options);
-
-          map.moveCamera({});
+          updateOptions(map, props);
 
           el.prepend(map.getDiv());
 
           setRef(_ref, map);
         } else {
+          const options = props.defaultOptions
+            ? {
+                ...props.defaultOptions,
+                ...props,
+              }
+            : props;
+
           const handleMap = () => {
             if (isAlive) {
               const div = document.createElement('div');
 
+              const overlayView = new (GoogleMapsLoader.get(
+                MAPS
+              )!.OverlayView)();
+
+              overlayView.onRemove = overlayView.draw = noop;
+
+              overlayView.onAdd = () => {
+                const resolvePanes = () => {
+                  if (isAlive) {
+                    const currentPanes = overlayView.getPanes();
+
+                    if (currentPanes) {
+                      panes = currentPanes;
+
+                      overlayView.setMap(null);
+
+                      resolvePromise();
+                    } else {
+                      requestAnimationFrame(resolvePanes);
+                    }
+                  }
+                };
+
+                resolvePanes();
+              };
+
               div.style.width = div.style.height = '100%';
 
-              map = new (GoogleMapsLoader.get(MAPS)!.Map)(div, options);
-
-              resolveMap();
-
               el.prepend(div);
+
+              overlayView.setMap(
+                (map = new (GoogleMapsLoader.get(MAPS)!.Map)(div, options))
+              );
 
               setRef(_ref, map);
             }
@@ -244,87 +338,20 @@ const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
           if (GoogleMapsLoader.getStatus(MAPS) == 'loaded') {
             handleMap();
           } else {
-            GoogleMapsLoader.load(MAPS).then(handleMap, () => {
-              resolveMap();
-            });
+            GoogleMapsLoader.load(MAPS).then(handleMap, resolvePromise);
           }
         }
+
+        props = ref = undefined!;
 
         return () => {
           isAlive = false;
 
           render._isFree = true;
 
-          resolveMap();
+          resolvePromise();
 
           if (map) {
-            const { ControlPosition, MapTypeId } = google.maps;
-
-            map.setOptions({
-              clickableIcons: true,
-              disableDefaultUI: false,
-              disableDoubleClickZoom: false,
-              draggable: true,
-              draggableCursor: null,
-              draggingCursor: null,
-              fullscreenControl: true,
-              fullscreenControlOptions: {
-                position: ControlPosition.INLINE_END_BLOCK_START,
-              },
-              gestureHandling: 'auto',
-              headingInteractionEnabled: false,
-              isFractionalZoomEnabled:
-                map.getRenderingType() == google.maps.RenderingType.VECTOR,
-              keyboardShortcuts: true,
-              mapTypeControl: true,
-              mapTypeControlOptions: {
-                mapTypeIds: [
-                  MapTypeId.ROADMAP,
-                  MapTypeId.SATELLITE,
-                  MapTypeId.HYBRID,
-                  MapTypeId.TERRAIN,
-                ],
-                position: ControlPosition.BLOCK_START_INLINE_START,
-                style: google.maps.MapTypeControlStyle.DEFAULT,
-              },
-              mapTypeId: MapTypeId.ROADMAP,
-              maxZoom: null,
-              minZoom: null,
-              noClear: false,
-              panControl: false,
-              panControlOptions: {
-                position: ControlPosition.INLINE_END_BLOCK_END,
-              },
-              restriction: {
-                latLngBounds: {
-                  west: -180,
-                  east: 180,
-                  north: MAX_LAT,
-                  south: -MAX_LAT,
-                },
-                strictBounds: false,
-              },
-              rotateControl: false,
-              rotateControlOptions: {
-                position: ControlPosition.INLINE_END_BLOCK_END,
-              },
-              scaleControl: false,
-              scaleControlOptions: {
-                style: google.maps.ScaleControlStyle.DEFAULT,
-              },
-              scrollwheel: true,
-              streetView: null,
-              streetViewControl: true,
-              styles: null,
-              tiltInteractionEnabled: false,
-              zoomControl: true,
-              zoomControlOptions: {
-                position: ControlPosition.INLINE_END_BLOCK_END,
-              },
-            });
-
-            map.moveCamera({ tilt: 0, heading: 0 });
-
             setRef(_ref, null);
           }
         };
@@ -355,8 +382,10 @@ const GoogleMap = forwardRef<google.maps.Map, PropsWithChildren<Props>>(
 
       components.push(render);
 
-      return render;
-    }, [key])(props, ref);
+      renderRef.current = render;
+    }
+
+    return renderRef.current(props, ref);
   }
 );
 

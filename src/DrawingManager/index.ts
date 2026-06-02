@@ -1,9 +1,11 @@
+'use client';
+
 import type { ComponentProps } from 'react';
-import handleComponent from '../utils/handleComponent';
+import createMapChildComponent from '../utils/createMapChildComponent';
 
 export type DrawingManagerProps = ComponentProps<typeof DrawingManager>;
 
-const DrawingManager = handleComponent<
+const DrawingManager = createMapChildComponent<
   google.maps.drawing.DrawingManager,
   {
     onCircleComplete: [circle: google.maps.Circle];
@@ -12,12 +14,6 @@ const DrawingManager = handleComponent<
     onPolygonComplete: [polygon: google.maps.Polygon];
     onPolylineComplete: [polyline: google.maps.Polyline];
     onRectangleComplete: [rectangle: google.maps.Rectangle];
-  },
-  {
-    /**
-     * The DrawingManager's drawing mode, which defines the type of overlay to be added on the map. Accepted values are `'marker'`, `'polygon'`, `'polyline'`, `'rectangle'`, `'circle'`.
-     */
-    drawingMode: true;
   }
 >(['drawing', 'DrawingManager']);
 
